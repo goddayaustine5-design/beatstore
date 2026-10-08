@@ -1,4 +1,8 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Austino Pro Beats</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -86,8 +90,18 @@ section{padding-block:56px 0}
 .chip{background:var(--surface);border:1px solid var(--line);padding:8px 16px;border-radius:999px;font-weight:600;font-size:.9rem;color:var(--muted)}
 .chip:hover{color:var(--fg);border-color:#3a3f4d}
 .chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
-.legend{margin-top:16px;display:flex;flex-wrap:wrap;gap:6px 22px;font-size:.85rem;color:var(--muted)}
-.legend b{color:var(--fg);font-weight:600}
+.terms{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.term{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;min-width:0}
+.term h3{font:800 1.35rem/1.05 var(--f-display);text-transform:uppercase;letter-spacing:.03em}
+.term-price{margin-top:8px;font:500 1.05rem/1 var(--f-mono);color:var(--accent)}
+.term ul{list-style:none;margin:16px 0 0;padding:16px 0 0;border-top:1px solid var(--line);display:grid;gap:10px}
+.term li{position:relative;padding-left:22px;font-size:.9rem;color:var(--fg)}
+.term li::before{content:"";position:absolute;left:2px;top:.45em;width:9px;height:5px;border-left:2px solid var(--ok);border-bottom:2px solid var(--ok);transform:rotate(-45deg)}
+.term li.no{color:var(--muted)}
+.term li.no::before{width:10px;height:0;border-left:0;border-bottom:2px solid var(--bad);transform:none;top:.6em}
+.chips:not(:empty){margin-top:28px}
+@media (max-width:1000px){.terms{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.terms{grid-template-columns:minmax(0,1fr)}}
 .group{margin-top:40px}
 .group-h{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
 .group-h h3{font:800 1.6rem/1 var(--f-display);text-transform:uppercase;letter-spacing:.04em}
@@ -223,6 +237,9 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
 }
 </style>
 
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#home" aria-label="Austino Pro home"><i aria-hidden="true"><b></b><b></b><b></b><b></b></i>Austino Pro</a>
@@ -269,18 +286,59 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
 
   <section id="beats" aria-labelledby="storeH">
     <div class="sec-head">
-      <div>
-        <h2 id="storeH">The Beat Store</h2>
-      </div>
-      <p>Pick MP3, WAV or Exclusive on any beat, then hit Buy. The price updates with your choice.</p>
+      <h2 id="storeH">Usage Terms</h2>
+    </div>
+    <div class="terms">
+      <article class="term">
+        <h3>MP3 Lease</h3>
+        <p class="term-price">&#8358;30,000</p>
+        <ul>
+          <li>Used for music recording</li>
+          <li>Distribute up to 1,000 copies</li>
+          <li>1,000,000 online audio streams</li>
+          <li class="no">No music video</li>
+          <li>For-profit live performances</li>
+          <li>Radio broadcasting rights (2 stations)</li>
+        </ul>
+      </article>
+      <article class="term">
+        <h3>WAV Lease</h3>
+        <p class="term-price">&#8358;80,000</p>
+        <ul>
+          <li>Used for music recording</li>
+          <li>Distribute up to 5,000 copies</li>
+          <li>4,000,000 online audio streams</li>
+          <li>1 music video</li>
+          <li>For-profit live performances</li>
+          <li>Radio broadcasting rights (5 stations)</li>
+        </ul>
+      </article>
+      <article class="term">
+        <h3>WAV Unlimited Lease (Stems)</h3>
+        <p class="term-price">&#8358;120,000</p>
+        <ul>
+          <li>Used for music recording</li>
+          <li>Distribute up to 10,000 copies</li>
+          <li>10,000,000 online audio streams</li>
+          <li>2 music videos</li>
+          <li>For-profit live performances</li>
+          <li>Radio broadcasting rights (5 stations)</li>
+        </ul>
+      </article>
+      <article class="term">
+        <h3>Exclusive Licence</h3>
+        <p class="term-price">&#8358;250,000</p>
+        <ul>
+          <li>Used for music recording</li>
+          <li>Distribute unlimited copies</li>
+          <li>Unlimited online audio streams</li>
+          <li>Unlimited music videos</li>
+          <li>For-profit live performances</li>
+          <li>Radio broadcasting rights (unlimited stations)</li>
+        </ul>
+      </article>
     </div>
     <div id="genres" class="chips" role="group" aria-label="Filter by genre"></div>
-    <div class="legend">
-      <span><b>MP3</b> basic lease &middot; &#8358;30,000</span>
-      <span><b>WAV</b> studio-quality lease &middot; &#8358;80,000</span>
-      <span><b>Unlimited</b> WAV with stems &middot; &#8358;120,000</span>
-      <span><b>Exclusive</b> yours alone, beat leaves the store &middot; &#8358;250,000</span>
-    </div>
     <div id="store"></div>
   </section>
 
@@ -394,7 +452,8 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     {k:3,label:'Exclusive',cart:'Exclusive rights'}
   ];
   // Public address of this page. Update it if the store moves to its own domain.
-  var SITE_URL = 'https://claude.ai/artifact/PQppkEAurKNcWBe4WKDNkz';
+  // On your own site (GitHub Pages or any domain) the links use the page's real address.
+  var SITE_URL = /claudeusercontent|claude\.ai/.test(location.hostname) ? 'https://claude.ai/artifact/PQppkEAurKNcWBe4WKDNkz' : location.href.split('#')[0];
   function slug(t){ return t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
   beats.forEach(function(b){ b.slug = slug(b.t); });
   function beatLink(b){ return SITE_URL + '#beat-' + b.slug; }
@@ -416,8 +475,8 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     if(b.key) meta.push('<span>'+b.key+'</span>');
     if(b.len) meta.push('<span>'+b.len+'</span>');
     if(b.date) meta.push('<span>Added '+fmtDate(b.date)+'</span>');
-    if(!b.s) meta.push('<span>Preview coming soon</span>');
-    var live = !!b.s;
+    var live = !!(b.s || b.src);
+    if(!live) meta.push('<span>Preview coming soon</span>');
     return '<article class="beat" id="beat-'+b.slug+'" data-id="'+b.id+'" style="--h:'+b.h+'">'+
       '<button class="play"'+(live?'':' disabled')+' type="button" aria-label="'+(live?'Play preview of ':'Preview coming soon for ')+b.t+'">'+ICON_PLAY+'</button>'+
       '<div class="info"><h4><a href="#beat-'+b.slug+'">'+b.t+'</a></h4><p class="meta">'+meta.join('')+'</p></div>'+
@@ -647,10 +706,20 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     while(A.next < A.ctx.currentTime + .15){ playStep(A.step,A.next); A.next += A.dur; A.step++; }
   }
   function start(id){
+    var b = byId[id];
+    if(b.src){
+      stop();
+      var el = new Audio(b.src);
+      A.el = el; A.cur = id;
+      el.addEventListener('ended',function(){ if(A.el===el) stop(); });
+      el.addEventListener('error',function(){ if(A.el===el) stop(); });
+      var p = el.play(); if(p && p.catch) p.catch(function(){ if(A.el===el) stop(); });
+      paintPlaying();
+      return;
+    }
     if(!init()) return;
     A.ctx.resume();
     stop();
-    var b = byId[id];
     A.b=b; A.st=STY[b.s]; A.cur=id; A.dur=60/b.bpm/4; A.step=0;
     A.bus = A.ctx.createGain(); A.bus.connect(A.master);
     A.next = A.ctx.currentTime + .06; A.t0 = A.next;
@@ -659,13 +728,14 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   }
   function stop(){
     if(!A.cur) return;
+    if(A.el){ A.el.pause(); A.el = null; A.cur = null; paintPlaying(); return; }
     clearInterval(A.timer);
     var bus=A.bus, t=A.ctx.currentTime;
     bus.gain.cancelScheduledValues(t); bus.gain.setTargetAtTime(0,t,.05);
     setTimeout(function(){ try{bus.disconnect()}catch(_){} },500);
     A.cur=null; paintPlaying();
   }
-  function toggle(id){ if(!byId[id].s) return; if(A.cur===id) stop(); else start(id); }
+  function toggle(id){ if(!byId[id].s && !byId[id].src) return; if(A.cur===id) stop(); else start(id); }
   function paintPlaying(){
     document.querySelectorAll('.beat').forEach(function(r){
       var on = A.cur === +r.getAttribute('data-id');
@@ -681,17 +751,41 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   function loop(){
     requestAnimationFrame(loop);
     if(A.cur){
-      var el = A.ctx.currentTime - A.t0;
       var row = document.querySelector('.beat[data-id="'+A.cur+'"] .prog');
+      if(A.el){
+        var d = A.el.duration;
+        if(row && isFinite(d) && d > 0) row.style.transform = 'scaleX('+Math.min(1,A.el.currentTime/d)+')';
+        return;
+      }
+      var el = A.ctx.currentTime - A.t0;
       if(row) row.style.transform = 'scaleX('+Math.min(1,Math.max(0,el/30))+')';
       if(el >= 30) stop();
     }
   }
   requestAnimationFrame(loop);
 
+  /* ---------- previews from the audio/ folder ---------- */
+  // Each beat looks for audio/<slug>.mp3 next to this page, for example audio/density.mp3.
+  // A beat with a file there gets a working play button and its length filled in.
+  function fmtLen(sec){ var m = Math.floor(sec/60), s = Math.round(sec%60); if(s===60){ m++; s=0; } return m+':'+(s<10?'0':'')+s; }
+  var rerender = null;
+  beats.forEach(function(b){
+    var probe = new Audio();
+    probe.preload = 'metadata';
+    probe.addEventListener('loadedmetadata',function(){
+      if(!isFinite(probe.duration) || probe.duration <= 0) return;
+      b.src = 'audio/'+b.slug+'.mp3';
+      if(!b.len) b.len = fmtLen(probe.duration);
+      clearTimeout(rerender);
+      rerender = setTimeout(function(){ renderStore(); goToHash(); },120);
+    });
+    probe.src = 'audio/'+b.slug+'.mp3';
+  });
+
   renderChips(); renderStore(); renderCart();
   goToHash();
 })();
 </script>
 
-</body></html>
+</body>
+</html>
