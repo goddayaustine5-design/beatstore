@@ -437,7 +437,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   // Austino Pro's real beat titles, in the order he sent them.
   // To add details for a beat later, give it: g (genre), bpm, key, len ('2:41'), date ('YYYY-MM-DD')
   // and a real preview. Until a preview is uploaded the play button stays disabled.
-  var TITLES = ['DENSITY','DRIP','FALLEN','FAREWELL','give me love','JAYE','JIGGY_2','JOVIA','LIGHT','MEAN','MOON LIGHT','MY PAIN','NEVER','NIGHT 2 NIGHT','PLENTY MONEY','PRAY','REAL','REASON','REGRET','REVIVE','SEED','STRANGER','TIME new','TOUCH YOU BODY NEW_2','UNDERSTAND','WILLING','WINE_2','YOLO'];
+  var TITLES = ['DENSITY','DRIP','FALLEN','FAREWELL','GIVE ME LOVE','JAYE','JIGGY','JOVIA','LIGHT','MEAN','MOON LIGHT','MY PAIN','NEVER','NIGHT 2 NIGHT','PLENTY MONEY','PRAY','REAL','REASON','REGRET','REVIVE','SEED','STRANGER','TIME','TOUCH YOU BODY','UNDERSTAND','WILLING','WINE','YOLO'];
   var beats = TITLES.map(function(t,i){ return {id:i+1,t:t,h:(i*47)%360}; });
   var byId = {}; beats.forEach(function(b){byId[b.id]=b});
   // Newest first once upload dates are filled in. Beats without a date keep the order above.
@@ -455,7 +455,9 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   // On your own site (GitHub Pages or any domain) the links use the page's real address.
   var SITE_URL = /claudeusercontent|claude\.ai/.test(location.hostname) ? 'https://claude.ai/artifact/PQppkEAurKNcWBe4WKDNkz' : location.href.split('#')[0];
   function slug(t){ return t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
-  beats.forEach(function(b){ b.slug = slug(b.t); });
+  // Old addresses for renamed beats: shared links and existing audio files under the old name keep working.
+  var OLD_SLUGS = {'GIVE ME LOVE':'give-me-love','JIGGY':'jiggy-2','TIME':'time-new','TOUCH YOU BODY':'touch-you-body-new-2','WINE':'wine-2'};
+  beats.forEach(function(b){ b.slug = slug(b.t); b.old = OLD_SLUGS[b.t] || null; });
   function beatLink(b){ return SITE_URL + '#beat-' + b.slug; }
   var ICON_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.8l7.4-4.4M8.3 13.2l7.4 4.4"/></svg>';
   var sel = {}; beats.forEach(function(b){sel[b.id]=0});
@@ -546,7 +548,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   function goToHash(){
     var m = /^#beat-([a-z0-9-]+)$/.exec(location.hash);
     if(!m) return;
-    var b = beats.filter(function(x){return x.slug===m[1]})[0];
+    var b = beats.filter(function(x){return x.slug===m[1] || x.old===m[1]})[0];
     if(!b) return;
     if(genreFilter !== 'All'){ genreFilter = 'All'; renderChips(); renderStore(); }
     var row = document.getElementById('beat-'+b.slug);
@@ -772,9 +774,13 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   beats.forEach(function(b){
     var probe = new Audio();
     probe.preload = 'metadata';
+    var tryOld = false;
+    probe.addEventListener('error',function(){
+      if(!tryOld && b.old){ tryOld = true; probe.src = 'audio/'+b.old+'.mp3'; }
+    });
     probe.addEventListener('loadedmetadata',function(){
       if(!isFinite(probe.duration) || probe.duration <= 0) return;
-      b.src = 'audio/'+b.slug+'.mp3';
+      b.src = tryOld ? 'audio/'+b.old+'.mp3' : 'audio/'+b.slug+'.mp3';
       if(!b.len) b.len = fmtLen(probe.duration);
       clearTimeout(rerender);
       rerender = setTimeout(function(){ renderStore(); goToHash(); },120);
