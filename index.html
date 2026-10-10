@@ -202,7 +202,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
 .total span:last-child{font-family:var(--f-mono)}
 .d-foot input{background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:12px 14px;border-radius:8px;font:inherit;width:100%}
 .d-foot input:focus{border-color:var(--accent);outline:none}
-.d-foot .btn{width:100%}
+.d-foot .btn{width:100%;white-space:normal;text-align:center;line-height:1.25;letter-spacing:.02em}
 .d-foot .btn[disabled]{opacity:.4;cursor:not-allowed}
 .note{font-size:.8rem;color:var(--muted)}
 .done{padding:28px 0;display:grid;gap:12px}
@@ -357,13 +357,13 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
       </div>
       <div class="tcol">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
-        <h3>Instant Delivery</h3>
-        <p>Your files are sent right after payment. No waiting, no back and forth.</p>
+        <h3>Fast Delivery</h3>
+        <p>Once your payment is confirmed on WhatsApp, your files are sent to you straight away.</p>
       </div>
       <div class="tcol">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 15v2"/></svg>
-        <h3>Secure Checkout</h3>
-        <p>Safe payments through a trusted processor. We never see or store your card details.</p>
+        <h3>Order on WhatsApp</h3>
+        <p>Your cart becomes a ready-made WhatsApp message. We confirm payment with you directly in the chat.</p>
       </div>
     </div>
   </section>
@@ -384,13 +384,10 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     <div class="foot">
       <div>
         <h3>Get the next drop first</h3>
-        <p>New beats land in your inbox before they hit the store.</p>
-        <form class="sub-form" id="subForm" novalidate>
-          <label class="sr" for="subEmail">Email address</label>
-          <input id="subEmail" type="email" placeholder="you@email.com" autocomplete="email" required>
-          <button class="btn btn-primary" type="submit">Subscribe</button>
-        </form>
-        <p class="msg" id="subMsg" role="status"></p>
+        <p>New beats land in our Telegram channel before they hit the store.</p>
+        <div class="sub-form">
+          <a class="btn btn-primary" href="https://t.me/Austinoproducer" target="_blank" rel="noopener noreferrer">Join on Telegram</a>
+        </div>
       </div>
       <div>
         <h4>Follow</h4>
@@ -420,10 +417,10 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   <div class="d-body" id="cartBody"></div>
   <form class="d-foot" id="payForm" novalidate>
     <div class="total"><span>Total</span><span id="total">&#8358;0</span></div>
-    <label class="sr" for="payEmail">Email for delivery</label>
-    <input id="payEmail" type="email" placeholder="Email for your files" autocomplete="email">
-    <button class="btn btn-primary" id="payBtn" type="submit" disabled>Pay now</button>
-    <p class="note" id="payNote">Files are sent to this email right after payment.</p>
+    <label class="sr" for="payEmail">Email (optional)</label>
+    <input id="payEmail" type="email" placeholder="Email (optional)" autocomplete="email">
+    <button class="btn btn-primary" id="payBtn" type="submit" disabled>CHECKOUT VIA WHATSAPP</button>
+    <p class="note" id="payNote">Your order opens in WhatsApp for you to send. Payment is arranged and confirmed in the chat, and your files are sent once it is confirmed.</p>
   </form>
 </aside>
 
@@ -432,6 +429,15 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   var NGN = new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0});
   var $ = function(s,r){return (r||document).querySelector(s)};
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- WhatsApp checkout settings ---------- */
+  // >>> PUT YOUR WHATSAPP NUMBER HERE (this is the only place it is used) <<<
+  // Nigerian number in international format: country code 234 followed by the number WITHOUT its leading 0.
+  // No plus sign, spaces, dashes or brackets. Example: 0801 234 5678 becomes "2348012345678".
+  // While this still holds the placeholder, checkout shows an error instead of opening WhatsApp.
+  const WHATSAPP_BUSINESS_NUMBER = "2349010216751";
+  // Longest WhatsApp link we will open. Longer orders are sent in a compact layout, then refused with a message.
+  const MAX_WHATSAPP_URL_LENGTH = 3000;
 
   /* ---------- data ---------- */
   // Austino Pro's real beat titles, in the order he sent them.
@@ -520,7 +526,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     var sh = e.target.closest('.share');
     if(sh){ shareBeat(b,sh,row); return; }
     if(e.target.closest('.buy-btn')){
-      addCart('beat-'+id,{title:b.t,lic:LIC[sel[id]].cart+(b.bpm?' · '+b.bpm+' BPM':''),price:PRICES[sel[id]]});
+      addCart('beat-'+id,{title:b.t,lic:LIC[sel[id]].cart+(b.bpm?' · '+b.bpm+' BPM':''),ln:LIC[sel[id]].cart,price:PRICES[sel[id]]});
       openCart();
     }
   });
@@ -560,8 +566,8 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   window.addEventListener('hashchange',goToHash);
 
   /* ---------- cart ---------- */
-  var cart = new Map(), doneView = false;
-  function addCart(key,item){ doneView=false; cart.set(key,item); renderCart(); }
+  var cart = new Map();
+  function addCart(key,item){ cart.set(key,item); resetNote(); renderCart(); }
   // Bundle deals: 3 beats = 1 free, 5 beats = 2 free, 7 or more = 3 free. The cheapest beats are the free ones.
   function calc(){
     var sub = 0, bp = [];
@@ -577,7 +583,6 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     var n = cart.size, nEl = $('#cartN');
     nEl.textContent = n; nEl.setAttribute('data-zero', n===0);
     var body = $('#cartBody'), form = $('#payForm');
-    if(doneView){ form.hidden = true; return; }
     form.hidden = false;
     if(!n){
       body.innerHTML = '<p class="d-empty">Your cart is empty.<br>Pick a license on any beat and press Buy.</p>';
@@ -592,26 +597,83 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
       body.innerHTML = h;
     }
     $('#total').textContent = NGN.format(total());
-    $('#payBtn').disabled = !n;
-    $('#payBtn').textContent = n ? 'Pay '+NGN.format(total()) : 'Pay now';
+    $('#payBtn').disabled = !n || waBusy;
+    $('#payBtn').textContent = 'CHECKOUT VIA WHATSAPP';
   }
   $('#cartBody').addEventListener('click',function(e){
-    var r = e.target.closest('.rm'); if(r){ cart.delete(r.getAttribute('data-k')); renderCart(); }
-    if(e.target.closest('#backBtn')){ cart.clear(); doneView=false; $('#payEmail').value=''; renderCart(); closeCart(); }
+    var r = e.target.closest('.rm'); if(r){ cart.delete(r.getAttribute('data-k')); resetNote(); renderCart(); }
   });
+  /* ---------- WhatsApp checkout ---------- */
+  // The order message uses calc() (the same function that fills the cart total) and the catalogue prices.
+  // Nothing is sent or paid by the website: the customer reviews the message and presses Send in WhatsApp.
+  var waBusy = false;
+  var EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  var DEFAULT_NOTE = $('#payNote').textContent;
+  function resetNote(){ var n = $('#payNote'); n.textContent = DEFAULT_NOTE; n.style.color = ''; }
+  function showNote(msg,bad,url){
+    var n = $('#payNote'); n.textContent = msg; n.style.color = bad ? 'var(--bad)' : '';
+    if(url){
+      var a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.textContent = 'Tap here if WhatsApp did not open.'; a.style.textDecoration = 'underline';
+      n.appendChild(document.createTextNode(' ')); n.appendChild(a);
+    }
+  }
+  function orderRef(){
+    var d = new Date(), p = function(x){ return (x<10?'0':'')+x; }, A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = '';
+    for(var k=0;k<4;k++) r += A.charAt(Math.floor(Math.random()*A.length));
+    return 'AP-'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+r;
+  }
+  // Returns '' when the cart is fine, otherwise a message for the customer.
+  function cartProblem(c){
+    if(!cart.size) return 'Your cart is empty. Add a beat first.';
+    var sum = 0, bad = '';
+    cart.forEach(function(i,k){
+      if(bad) return;
+      var li = LIC.filter(function(l){ return l.cart === i.ln; })[0];
+      if(typeof i.title !== 'string' || !i.title.trim()) bad = 'One item in your cart has no title. Please remove it and add it again.';
+      else if(!li) bad = 'Please pick a licence for '+i.title+' again.';
+      else if(i.price !== PRICES[li.k]) bad = 'The price for '+i.title+' could not be verified. Please remove it and add it again.';
+      else if(k.indexOf('beat-') === 0 && (!byId[k.slice(5)] || byId[k.slice(5)].t !== i.title)) bad = i.title+' is not in the catalogue. Please remove it from your cart.';
+      sum += i.price;
+    });
+    if(bad) return bad;
+    if(sum !== c.sub || c.total !== c.sub - c.disc || c.total <= 0 || $('#total').textContent !== NGN.format(c.total))
+      return 'The order total could not be verified. Please close and reopen the cart, then try again.';
+    return '';
+  }
+  function buildMessage(c,email,ref,compact){
+    var L = ['Hello Austino Pro! 👋','',"I'd like to purchase the following beats from your store.",'','🎵 MY BEAT ORDER','Order Ref: '+ref,''], n = 0;
+    cart.forEach(function(i){
+      n++;
+      if(compact) L.push(n+'. '+i.title+' — '+i.ln+' — '+NGN.format(i.price));
+      else L.push(n+'. '+i.title,'Licence: '+i.ln,'Price: '+NGN.format(i.price),'');
+    });
+    if(compact) L.push('');
+    L.push('━━━━━━━━━━━━━━━━','');
+    if(c.disc) L.push('Subtotal: '+NGN.format(c.sub),'Bundle Discount ('+c.free+' beat'+(c.free>1?'s':'')+' free): -'+NGN.format(c.disc),'');
+    L.push('💰 TOTAL: '+NGN.format(c.total),'');
+    if(email) L.push('Customer Email: '+email,'');
+    L.push('Please confirm my order and provide the payment instructions.','','Thank you!','','Store: '+SITE_URL);
+    return L.join('\n');
+  }
+  function waUrl(msg){ return 'https://wa.me/'+WHATSAPP_BUSINESS_NUMBER+'?text='+encodeURIComponent(msg); }
   $('#payForm').addEventListener('submit',function(e){
     e.preventDefault();
-    var em = $('#payEmail').value.trim();
-    if(!cart.size) return;
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){
-      $('#payNote').textContent = 'Enter a valid email so we know where to send your files.';
-      $('#payNote').style.color = 'var(--bad)'; $('#payEmail').focus(); return;
-    }
-    $('#payNote').style.color = ''; $('#payNote').textContent = 'Files are sent to this email right after payment.';
-    doneView = true;
-    var lines = ''; cart.forEach(function(i){lines += '<div class="item"><div class="t"><b>'+i.title+'</b><span>'+i.lic+'</span></div><span class="p">'+NGN.format(i.price)+'</span></div>';});
-    $('#cartBody').innerHTML = '<div class="done"><h4>Order captured</h4><p>Total '+NGN.format(total())+' for '+em.replace(/</g,'&lt;')+'.</p><div>'+lines+'</div><p class="note">Preview only: no payment was taken and no files were sent. Connect Paystack or Flutterwave to go live.</p><button class="btn btn-ghost" id="backBtn" type="button">Back to beats</button></div>';
-    $('#payForm').hidden = true;
+    if(waBusy) return;
+    var c = calc(), err = cartProblem(c);
+    if(err) return showNote(err,true);
+    if(!/^234\d{10}$/.test(WHATSAPP_BUSINESS_NUMBER))
+      return showNote('WhatsApp ordering is not set up yet. The store owner still needs to add the WhatsApp business number.',true);
+    var email = $('#payEmail').value.trim();
+    if(email && !EMAIL_RE.test(email)){ showNote('That email address does not look right. Fix it or leave it blank.',true); $('#payEmail').focus(); return; }
+    var ref = orderRef(), url = waUrl(buildMessage(c,email,ref,false));
+    if(url.length > MAX_WHATSAPP_URL_LENGTH) url = waUrl(buildMessage(c,email,ref,true));
+    if(url.length > MAX_WHATSAPP_URL_LENGTH) return showNote('This order is too long for one WhatsApp message. Please split it into two smaller orders.',true);
+    waBusy = true; renderCart();
+    var a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    document.body.appendChild(a); a.click(); a.remove();
+    showNote('WhatsApp is opening with your order ('+ref+'). Press Send there to submit it. Nothing is paid until we confirm in the chat.',false,url);
+    setTimeout(function(){ waBusy = false; renderCart(); },3000);
   });
   var lastFocus = null;
   function openCart(){
@@ -633,13 +695,6 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     var o = $('#nav').classList.toggle('open'); this.setAttribute('aria-expanded', o);
   });
   $('#nav').addEventListener('click',function(e){ if(e.target.closest('a')){ $('#nav').classList.remove('open'); $('#burger').setAttribute('aria-expanded','false'); } });
-  $('#subForm').addEventListener('submit',function(e){
-    e.preventDefault();
-    var v = $('#subEmail').value.trim(), m = $('#subMsg');
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){ m.className='msg err'; m.textContent='Enter a valid email address.'; return; }
-    m.className='msg ok'; m.textContent='Thanks. Preview only: this address was not saved yet.';
-    $('#subEmail').value='';
-  });
 
   /* ---------- audio: synthesized previews ---------- */
   var STY = {
