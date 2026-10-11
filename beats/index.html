@@ -157,7 +157,13 @@ section{padding-block:56px 0}
 .pack p{color:var(--muted);font-size:.9rem}
 .pack .row{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:6px}
 .pack .btn{padding:9px 16px;font-size:.9rem}
-.licence-note{color:var(--muted);margin:0 0 16px}
+.licence-note{color:var(--muted);margin:0}
+.storebar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;margin-bottom:16px}
+.curpick{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:.9rem;color:var(--muted)}
+.cursel{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font:inherit;font-size:.9rem;cursor:pointer}
+.cursel:hover{border-color:#3a3f4d}
+.rate-hint{font:400 .78rem/1.3 var(--f-mono);color:var(--muted)}
+.curpick-cart{justify-content:space-between;flex-wrap:nowrap}
 .licence-note a{color:var(--accent);text-decoration:underline}
 .about{display:grid;grid-template-columns:minmax(0,1fr);gap:40px;align-items:start}
 .about p{color:var(--muted);max-width:56ch}
@@ -291,7 +297,14 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   </div>
 
   <section id="beats" aria-label="Beats">
-    <p class="licence-note">Not sure which licence you need? <a href="about.html#usage-terms">See the usage terms</a>.</p>
+    <div class="storebar">
+      <p class="licence-note">Not sure which licence you need? <a href="about.html#usage-terms">See the usage terms</a>.</p>
+      <div class="curpick">
+        <label for="cur">Prices in</label>
+        <select id="cur" class="cursel"><option value="NGN">Naira (₦)</option></select>
+        <span class="rate-hint" id="rateHint"></span>
+      </div>
+    </div>
     <div id="genres" class="chips" role="group" aria-label="Filter by genre"></div>
     <div id="store"></div>
   </section>
@@ -343,7 +356,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
         </ul>
       </div>
     </div>
-    <div class="legal"><span>&copy; 2026 Austino Pro</span><span>Prices in Nigerian naira</span></div>
+    <div class="legal"><span>&copy; 2026 Austino Pro</span><span id="legalCur">Prices in Nigerian naira</span></div>
   </div>
 </footer>
 
@@ -352,7 +365,12 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   <div class="d-head"><h3>Your Cart</h3><button class="x" id="closeCart" aria-label="Close cart">&times;</button></div>
   <div class="d-body" id="cartBody"></div>
   <form class="d-foot" id="payForm" novalidate>
+    <div class="curpick curpick-cart">
+      <label for="curCart">Currency</label>
+      <select id="curCart" class="cursel"><option value="NGN">Naira (₦)</option></select>
+    </div>
     <div class="total"><span>Total</span><span id="total">&#8358;0</span></div>
+    <p class="note" id="rateNote" hidden></p>
     <label class="sr" for="payEmail">Email (optional)</label>
     <input id="payEmail" type="email" placeholder="Email (optional)" autocomplete="email">
     <button class="btn btn-primary" id="payBtn" type="submit" disabled>CHECKOUT VIA WHATSAPP</button>
@@ -364,6 +382,15 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
 <script>
 (function(){
   var NGN = new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0});
+  // Naira is the base price. Other currencies are converted from naira with a live exchange rate (see "currency" below).
+  var CURRENCIES = [{c:'NGN',n:'Naira (₦)',w:'Nigerian naira'},{c:'USD',n:'US Dollar ($)',w:'US dollars'},{c:'GBP',n:'British Pound (£)',w:'British pounds'},{c:'EUR',n:'Euro (€)',w:'euros'}];
+  var RATES = {NGN:1};   // units of each currency per 1 naira
+  var curCode = 'NGN', rateDate = '', fmtCache = {};
+  function money(n){
+    if(curCode === 'NGN' || !RATES[curCode]) return NGN.format(n);
+    var f = fmtCache[curCode] || (fmtCache[curCode] = new Intl.NumberFormat('en-US',{style:'currency',currency:curCode}));
+    return f.format(n * RATES[curCode]);
+  }
   var $ = function(s,r){return (r||document).querySelector(s)};
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -389,7 +416,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   // Austino Pro's real beat titles, in the order he sent them.
   // To add details for a beat later, give it: g (genre), bpm, key, len ('2:41'), date ('YYYY-MM-DD')
   // and a real preview. Until a preview is uploaded the play button stays disabled.
-  var TITLES = ['DENSITY','DRIP','FALLEN','FAREWELL','GIVE ME LOVE','JAYE','JIGGY','JOVIA','LIGHT','MEAN','MOON LIGHT','MY PAIN','NEVER','NIGHT 2 NIGHT','PLENTY MONEY','PRAY','REAL','REASON','REGRET','REVIVE','SEED','STRANGER','TIME','TOUCH YOUR BODY','UNDERSTAND','WILLING','WINE','YOLO','BOUNCE','CHARM','EUPHORIA','FLEXY','GOLDEN','JOMO','MARS','PLAY','TONIGHT','BRAVE','COLD','FEELING','FORGIVE','HEART TO HEART','JOY','MY BROTHER','PANIC','SAFTY','WOMAN','BYE','CRIME','FEVER','FOR YOU','IMAGINATION','LOCATION','MY BUSINESS','PARTY TIME','SAVE ME','YOURS','ADDICTED','ANGELA','AYE','CHAMPION','COMPLY','CRIMINAL','FEARLESS','FOR ME','GOATED','HAPPINESS','INVASION','JEJE','MARAMMA','MOVING','ON MY MIND','SILVER','WINNER','AFTER PARTY','ANGELKEYS','CALLING','CLOSER','CONGO','DOSAGE','FEELING COLD','FOREVER','GOLD DIGGER','HOLD TIGHT','JANGLOVA','KELE','NO RULES','OVERDOSE','SINNER','AIONE','AWAY','CALM DOWN','COLOUR','CONTROL','FANTASY','FOLAKE','GENTLE','HALIMA','HOPE','JARA','MANIFEST','MOVER','NOBODY','WHY'];
+  var TITLES = ['DENSITY','DRIP','FALLEN','FAREWELL','GIVE ME LOVE','JAYE','JIGGY','JOVIA','LIGHT','MEAN','MOON LIGHT','MY PAIN','NEVER','NIGHT 2 NIGHT','PLENTY MONEY','PRAY','REAL','REASON','REGRET','REVIVE','SEED','STRANGER','TIME','TOUCH YOUR BODY','UNDERSTAND','WILLING','WINE','YOLO','BOUNCE','CHARM','EUPHORIA','FLEXY','GOLDEN','JOMO','MARS','PLAY','TONIGHT','BRAVE','COLD','FEELING','FORGIVE','HEART TO HEART','JOY','MY BROTHER','PANIC','SAFTY','WOMAN','BYE','CRIME','FEVER','FOR YOU','IMAGINATION','LOCATION','MY BUSINESS','PARTY TIME','SAVE ME','YOURS','ADDICTED','ANGELA','AYE','CHAMPION','COMPLY','CRIMINAL','FEARLESS','FOR ME','GOATED','HAPPINESS','INVASION','JEJE','MARAMMA','MOVING','ON MY MIND','SILVER','WINNER','AFTER PARTY','ANGELKEYS','CALLING','CLOSER','CONGO','DOSAGE','FEELING COLD','FOREVER','GOLD DIGGER','HOLD TIGHT','JANGLOVA','KELE','NO RULES','OVADOSE','SINNER','ALONE','AWAY','CALM DOWN','COLOUR','CONTROL','FANTASY','FOLAKE','GENTLE','HALIMA','HOPE','JARA','MANIFEST','MOVER','NOBODY','WHY'];
   var beats = TITLES.map(function(t,i){ return {id:i+1,t:t,h:(i*47)%360}; });
   var byId = {}; beats.forEach(function(b){byId[b.id]=b});
   // Newest first once upload dates are filled in. Beats without a date keep the order above.
@@ -408,7 +435,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   var SITE_URL = /claudeusercontent|claude\.ai/.test(location.hostname) ? 'https://claude.ai/artifact/PQppkEAurKNcWBe4WKDNkz' : location.href.split('#')[0].replace(/\/beats\/?$/,'/');
   function slug(t){ return t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
   // Old addresses for renamed beats: shared links and existing audio files under the old name keep working.
-  var OLD_SLUGS = {'GIVE ME LOVE':'give-me-love','JIGGY':'jiggy-2','TIME':'time-new','TOUCH YOUR BODY':'touch-you-body-new-2','WINE':'wine-2'};
+  var OLD_SLUGS = {'ALONE':'aione','OVADOSE':'overdose','GIVE ME LOVE':'give-me-love','JIGGY':'jiggy-2','TIME':'time-new','TOUCH YOUR BODY':'touch-you-body-new-2','WINE':'wine-2'};
   beats.forEach(function(b){ b.slug = slug(b.t); b.old = OLD_SLUGS[b.t] || null; });
   function beatLink(b){ return SITE_URL + '#beat-' + b.slug; }
   var ICON_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.8l7.4-4.4M8.3 13.2l7.4 4.4"/></svg>';
@@ -436,7 +463,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
       '<button class="play"'+(live?'':' disabled')+' type="button" aria-label="'+(live?'Play preview of ':'Preview coming soon for ')+b.t+'">'+ICON_PLAY+'</button>'+
       '<div class="info"><h4><a href="#beat-'+b.slug+'">'+b.t+'</a></h4><p class="meta">'+meta.join('')+'</p></div>'+
       '<div class="fmts" role="group" aria-label="File format for '+b.t+'">'+chips+'</div>'+
-      '<div class="buy"><button class="share" type="button" aria-label="Copy link to '+b.t+'" title="Copy link">'+ICON_SHARE+'<span class="st">Share</span></button><span class="price">'+NGN.format(PRICES[sel[b.id]])+'</span><button class="btn btn-primary buy-btn" type="button">Buy</button></div>'+
+      '<div class="buy"><button class="share" type="button" aria-label="Copy link to '+b.t+'" title="Copy link">'+ICON_SHARE+'<span class="st">Share</span></button><span class="price">'+money(PRICES[sel[b.id]])+'</span><button class="btn btn-primary buy-btn" type="button">Buy</button></div>'+
       '<i class="prog" aria-hidden="true"></i></article>';
   }
   function renderStore(){
@@ -482,7 +509,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     if(f){
       sel[id] = +f.getAttribute('data-k');
       row.querySelectorAll('.fmt').forEach(function(x){x.setAttribute('aria-pressed', x===f)});
-      row.querySelector('.price').textContent = NGN.format(PRICES[sel[id]]);
+      row.querySelector('.price').textContent = money(PRICES[sel[id]]);
       return;
     }
     var sh = e.target.closest('.share');
@@ -574,14 +601,14 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     } else {
       var h = '';
       cart.forEach(function(i,k){
-        h += '<div class="item"><div class="t"><b>'+i.title+'</b><span>'+i.lic+'</span></div><span class="p">'+NGN.format(i.price)+'</span><button class="rm" type="button" data-k="'+k+'" aria-label="Remove '+i.title+'">Remove</button></div>';
+        h += '<div class="item"><div class="t"><b>'+i.title+'</b><span>'+i.lic+'</span></div><span class="p">'+money(i.price)+'</span><button class="rm" type="button" data-k="'+k+'" aria-label="Remove '+i.title+'">Remove</button></div>';
       });
       var c = calc();
-      if(c.disc) h += '<div class="item disc"><span>Bundle deal: '+c.free+' beat'+(c.free>1?'s':'')+' free</span><span>−'+NGN.format(c.disc)+'</span></div>';
+      if(c.disc) h += '<div class="item disc"><span>Bundle deal: '+c.free+' beat'+(c.free>1?'s':'')+' free</span><span>−'+money(c.disc)+'</span></div>';
       if(c.next) h += '<p class="hint" style="padding:14px 0">Add '+c.next[0]+' more beat'+(c.next[0]>1?'s':'')+' to get '+c.next[1]+' free.</p>';
       body.innerHTML = h;
     }
-    $('#total').textContent = NGN.format(total());
+    $('#total').textContent = money(total());
     $('#payBtn').disabled = !n || waBusy;
     $('#payBtn').textContent = 'CHECKOUT VIA WHATSAPP';
     saveCart();
@@ -623,7 +650,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
       sum += i.price;
     });
     if(bad) return bad;
-    if(sum !== c.sub || c.total !== c.sub - c.disc || c.total <= 0 || $('#total').textContent !== NGN.format(c.total))
+    if(sum !== c.sub || c.total !== c.sub - c.disc || c.total <= 0 || $('#total').textContent !== money(c.total))
       return 'The order total could not be verified. Please close and reopen the cart, then try again.';
     return '';
   }
@@ -638,6 +665,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     L.push('━━━━━━━━━━━━━━━━','');
     if(c.disc) L.push('Subtotal: '+NGN.format(c.sub),'Bundle Discount ('+c.free+' beat'+(c.free>1?'s':'')+' free): -'+NGN.format(c.disc),'');
     L.push('💰 TOTAL: '+NGN.format(c.total),'');
+    if(curCode !== 'NGN' && RATES[curCode]) L.push('(Shown on the website as about '+money(c.total)+'. Please confirm in naira.)','');
     if(email) L.push('Customer Email: '+email,'');
     L.push('Please confirm my order and provide the payment instructions.','','Thank you!','','Store: '+SITE_URL);
     return L.join('\n');
@@ -847,8 +875,86 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     probe.src = AUDIO_DIR+b.slug+'.mp3';
   });
 
+  /* ---------- currency ---------- */
+  // Prices are stored in naira. For dollars, pounds and euros the page asks a free exchange-rate service
+  // for today's rate, keeps it for 6 hours, and converts on screen. WhatsApp orders are always confirmed in naira.
+  var RATE_KEY = 'ap_rates_v1', CUR_KEY = 'ap_currency';
+  var FRESH_MS = 6*3600*1000, STALE_MS = 7*24*3600*1000;
+  function lsGet(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }
+  function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }
+  function cachedRates(maxAge){
+    try{ var o = JSON.parse(lsGet(RATE_KEY)||'null'); if(o && o.rates && Date.now()-o.t < maxAge) return o; }catch(_){}
+    return null;
+  }
+  function fetchJson(url){
+    var ctl = ('AbortController' in window) ? new AbortController() : null, to = setTimeout(function(){ if(ctl) ctl.abort(); },7000);
+    return fetch(url,{signal:ctl?ctl.signal:undefined,cache:'no-store'}).then(function(r){ clearTimeout(to); if(!r.ok) throw new Error('http'); return r.json(); });
+  }
+  function sourceA(){ return fetchJson('https://open.er-api.com/v6/latest/NGN').then(function(d){
+    if(!d || d.result !== 'success' || !d.rates) throw new Error('bad');
+    return {USD:d.rates.USD,GBP:d.rates.GBP,EUR:d.rates.EUR};
+  }); }
+  function sourceB(){ return fetchJson('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/ngn.json').then(function(d){
+    if(!d || !d.ngn) throw new Error('bad');
+    return {USD:d.ngn.usd,GBP:d.ngn.gbp,EUR:d.ngn.eur};
+  }); }
+  function validRates(r){ return r && r.USD > 0 && r.GBP > 0 && r.EUR > 0; }
+  function setRates(r,t){
+    RATES = {NGN:1,USD:r.USD,GBP:r.GBP,EUR:r.EUR}; fmtCache = {};
+    var d = new Date(t); rateDate = d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    var want = lsGet(CUR_KEY);
+    if(want && RATES[want]) curCode = want;
+    buildCurrencySelects(); applyCurrency();
+  }
+  function loadRates(){
+    var fresh = cachedRates(FRESH_MS);
+    if(fresh){ setRates(fresh.rates,fresh.t); return; }
+    sourceA().catch(sourceB).then(function(r){
+      if(!validRates(r)) throw new Error('bad');
+      lsSet(RATE_KEY,JSON.stringify({rates:r,t:Date.now()}));
+      setRates(r,Date.now());
+    }).catch(function(){
+      var old = cachedRates(STALE_MS);
+      if(old) setRates(old.rates,old.t);
+      else { buildCurrencySelects(); applyCurrency(); }   // no rate available: other currencies stay disabled
+    });
+  }
+  function buildCurrencySelects(){
+    var html = CURRENCIES.map(function(x){
+      var ok = x.c === 'NGN' || !!RATES[x.c];
+      return '<option value="'+x.c+'"'+(x.c===curCode?' selected':'')+(ok?'':' disabled')+'>'+x.n+(ok?'':' (unavailable)')+'</option>';
+    }).join('');
+    $('#cur').innerHTML = html; $('#curCart').innerHTML = html;
+  }
+  function applyCurrency(){
+    $('#cur').value = curCode; $('#curCart').value = curCode;
+    var unit = {USD:'$1',GBP:'£1',EUR:'€1'}[curCode], hint = $('#rateHint'), note = $('#rateNote'), legal = $('#legalCur');
+    if(curCode !== 'NGN' && RATES[curCode]){
+      var per = Math.round(1/RATES[curCode]).toLocaleString('en-NG');
+      hint.textContent = '≈ ₦'+per+' per '+unit+(rateDate?' · '+rateDate:'');
+      note.hidden = false;
+      note.textContent = 'Converted from naira at about ₦'+per+' per '+unit+(rateDate?' ('+rateDate+')':'')+'. Orders are confirmed in naira, so the final amount may differ slightly.';
+      legal.textContent = 'Prices shown in '+CURRENCIES.filter(function(x){return x.c===curCode;})[0].w+', converted from naira';
+    } else {
+      hint.textContent = ''; note.hidden = true; note.textContent = '';
+      legal.textContent = 'Prices in Nigerian naira';
+    }
+    document.querySelectorAll('.beat').forEach(function(r){
+      var b = byId[+r.getAttribute('data-id')], pe = r.querySelector('.price');
+      if(b && pe) pe.textContent = money(PRICES[sel[b.id]]);
+    });
+    renderCart();
+  }
+  function setCurrency(code){
+    if(!(code === 'NGN' || RATES[code])) return;
+    curCode = code; lsSet(CUR_KEY,code); applyCurrency();
+  }
+  $('#cur').addEventListener('change',function(){ setCurrency(this.value); });
+  $('#curCart').addEventListener('change',function(){ setCurrency(this.value); });
+
   restoreCart();
   renderChips(); renderStore(); renderCart();
+  loadRates();
   goToHash();
   // The address /beats (Vercel serves this same page for it, see vercel.json) jumps straight to the beats list.
   function jumpToBeats(){
