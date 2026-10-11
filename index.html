@@ -378,7 +378,10 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   // Put your recorded voice tag (for example "Austino Pro") at audio/tag.mp3, next to this page.
   // When that file exists it plays over every beat preview: at the start and again every PREVIEW_TAG_EVERY seconds.
   // If the file is missing, previews play normally with no tag.
-  const PREVIEW_TAG_FILE = "audio/tag.mp3";
+  // Folder that holds the preview MP3s. It always resolves to /audio/ at the top of your site,
+  // even when the page is opened as /beats or /beats/ (a relative "audio/" would break on /beats/).
+  const AUDIO_DIR = (function(){ try{ return new URL("audio/", location.href.replace(/\/beats\/?(?=[?#]|$)/, "/")).href; }catch(_){ return "audio/"; } })();
+  const PREVIEW_TAG_FILE = AUDIO_DIR + "tag.mp3";
   const PREVIEW_TAG_EVERY = 20;   // seconds between tags
   const PREVIEW_TAG_DUCK = 0.45;  // beat volume while the tag speaks (1 = no lowering; ignored on iPhones)
 
@@ -386,7 +389,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   // Austino Pro's real beat titles, in the order he sent them.
   // To add details for a beat later, give it: g (genre), bpm, key, len ('2:41'), date ('YYYY-MM-DD')
   // and a real preview. Until a preview is uploaded the play button stays disabled.
-  var TITLES = ['DENSITY','DRIP','FALLEN','FAREWELL','GIVE ME LOVE','JAYE','JIGGY','JOVIA','LIGHT','MEAN','MOON LIGHT','MY PAIN','NEVER','NIGHT 2 NIGHT','PLENTY MONEY','PRAY','REAL','REASON','REGRET','REVIVE','SEED','STRANGER','TIME','TOUCH YOUR BODY','UNDERSTAND','WILLING','WINE','YOLO','BOUNCE','CHARM','EUPHORIA','FLEXY','GOLDEN','JOMO','MARS','PLAY','TONIGHT','BRAVE','COLD','FEELING','FORGIVE','HEART TO HEART','JOY','MY BROTHER','PANIC','SAFTY','WOMAN','BYE','CRIME','FEVER','FOR YOU','IMAGINATION','LOCATION','MY BUSINESS','PARTY TIME','SAVE ME','YOURS','ADDICTED','ANGELA','AYE','CHAMPION','COMPLY','CRIMINAL','FEARLESS','FOR ME','GOATED','HAPPINESS','INVASION','JEJE','MARAMMA','MOVING','ON MY MIND','SILVER','WINNER','AFTER PARTY','ANGELKEYS','CALLING','CLOSER','CONGO','DOSAGE','FEELING COLD','FOREVER','GOLD DIGGER','HOLD TIGHT','JANGLOVA','KELE','MOOD','NO RULES','OVERDOSE','SINNER','AIONE','AWAY','CALM DOWN','COLOUR','CONTROL','FANTASY','FOLAKE','GENTLE','HALIMA','HOPE','JARA','MANIFEST','MOVER','NOBODY','WHY'];
+  var TITLES = ['DENSITY','DRIP','FALLEN','FAREWELL','GIVE ME LOVE','JAYE','JIGGY','JOVIA','LIGHT','MEAN','MOON LIGHT','MY PAIN','NEVER','NIGHT 2 NIGHT','PLENTY MONEY','PRAY','REAL','REASON','REGRET','REVIVE','SEED','STRANGER','TIME','TOUCH YOUR BODY','UNDERSTAND','WILLING','WINE','YOLO','BOUNCE','CHARM','EUPHORIA','FLEXY','GOLDEN','JOMO','MARS','PLAY','TONIGHT','BRAVE','COLD','FEELING','FORGIVE','HEART TO HEART','JOY','MY BROTHER','PANIC','SAFTY','WOMAN','BYE','CRIME','FEVER','FOR YOU','IMAGINATION','LOCATION','MY BUSINESS','PARTY TIME','SAVE ME','YOURS','ADDICTED','ANGELA','AYE','CHAMPION','COMPLY','CRIMINAL','FEARLESS','FOR ME','GOATED','HAPPINESS','INVASION','JEJE','MARAMMA','MOVING','ON MY MIND','SILVER','WINNER','AFTER PARTY','ANGELKEYS','CALLING','CLOSER','CONGO','DOSAGE','FEELING COLD','FOREVER','GOLD DIGGER','HOLD TIGHT','JANGLOVA','KELE','NO RULES','OVERDOSE','SINNER','AIONE','AWAY','CALM DOWN','COLOUR','CONTROL','FANTASY','FOLAKE','GENTLE','HALIMA','HOPE','JARA','MANIFEST','MOVER','NOBODY','WHY'];
   var beats = TITLES.map(function(t,i){ return {id:i+1,t:t,h:(i*47)%360}; });
   var byId = {}; beats.forEach(function(b){byId[b.id]=b});
   // Newest first once upload dates are filled in. Beats without a date keep the order above.
@@ -832,16 +835,16 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     probe.preload = 'metadata';
     var tryOld = false;
     probe.addEventListener('error',function(){
-      if(!tryOld && b.old){ tryOld = true; probe.src = 'audio/'+b.old+'.mp3'; }
+      if(!tryOld && b.old){ tryOld = true; probe.src = AUDIO_DIR+b.old+'.mp3'; }
     });
     probe.addEventListener('loadedmetadata',function(){
       if(!isFinite(probe.duration) || probe.duration <= 0) return;
-      b.src = tryOld ? 'audio/'+b.old+'.mp3' : 'audio/'+b.slug+'.mp3';
+      b.src = tryOld ? AUDIO_DIR+b.old+'.mp3' : AUDIO_DIR+b.slug+'.mp3';
       if(!b.len) b.len = fmtLen(probe.duration);
       clearTimeout(rerender);
       rerender = setTimeout(function(){ renderStore(); goToHash(); },120);
     });
-    probe.src = 'audio/'+b.slug+'.mp3';
+    probe.src = AUDIO_DIR+b.slug+'.mp3';
   });
 
   restoreCart();
