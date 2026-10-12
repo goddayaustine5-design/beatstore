@@ -163,6 +163,10 @@ section{padding-block:56px 0}
 .pack .row{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:6px}
 .pack .btn{padding:9px 16px;font-size:.9rem}
 .licence-note{color:var(--muted);margin:0}
+.searchbar{position:relative;margin:0 0 14px;max-width:460px}
+.searchbar input{width:100%;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:12px 40px 12px 14px;font:inherit;font-size:1rem}
+.searchbar input:focus{outline:none;border-color:#5a6072}
+.qclear{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:1.4rem;line-height:1;cursor:pointer}
 .storebar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;margin-bottom:16px}
 .curpick{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:.9rem;color:var(--muted)}
 .cursel{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font:inherit;font-size:.9rem;cursor:pointer}
@@ -310,6 +314,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
         <span class="rate-hint" id="rateHint"></span>
       </div>
     </div>
+    <div class="searchbar"><input id="q" type="search" placeholder="Search beats by name…" aria-label="Search beats by name" autocomplete="off" spellcheck="false"><button id="qClear" type="button" class="qclear" aria-label="Clear search" hidden>&times;</button></div>
     <div id="genres" class="chips" role="group" aria-label="Filter by genre"></div>
     <div id="store"></div>
   </section>
@@ -421,7 +426,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   // Austino Pro's real beat titles, in the order he sent them.
   // To add details for a beat later, give it: g (genre), bpm, key, len ('2:41'), date ('YYYY-MM-DD')
   // and a real preview. Until a preview is uploaded the play button stays disabled.
-  var TITLES = ['DENSITY','DRIP','FALLEN','FAREWELL','GIVE ME LOVE','JAYE','JIGGY','JOVIA','LIGHT','MEAN','MOON LIGHT','MY PAIN','NEVER','NIGHT 2 NIGHT','PLENTY MONEY','PRAY','REAL','REASON','REGRET','REVIVE','SEED','STRANGER','TIME','TOUCH YOUR BODY','UNDERSTAND','WILLING','WINE','YOLO','BOUNCE','CHARM','EUPHORIA','FLEXY','GOLDEN','JOMO','MARS','PLAY','TONIGHT','BRAVE','COLD','FEELING','FORGIVE','HEART TO HEART','JOY','MY BROTHER','PANIC','SAFTY','WOMAN','BYE','CRIME','FEVER','FOR YOU','IMAGINATION','LOCATION','MY BUSINESS','PARTY TIME','SAVE ME','YOURS','ADDICTED','ANGELA','AYE','CHAMPION','COMPLY','CRIMINAL','FEARLESS','FOR ME','GOATED','HAPPINESS','INVASION','JEJE','MARAMMA','MOVING','ON MY MIND','SILVER','WINNER','AFTER PARTY','ANGELKEYS','CALLING','CLOSER','CONGO','DOSAGE','FEELING COLD','FOREVER','GOLD DIGGER','HOLD TIGHT','JANGLOVA','KELE','NO RULES','OVADOSE','SINNER','ALONE','AWAY','CALM DOWN','COLOUR','CONTROL','FANTASY','FOLAKE','GENTLE','HALIMA','HOPE','JARA','MANIFEST','MOVER','NOBODY','WHY'];
+  var TITLES = ['DENSITY','DRIP','FALLEN','FAREWELL','GIVE ME LOVE','JAYE','JIGGY','JOVIA','LIGHT','MEAN','MOON LIGHT','MY PAIN','NEVER','NIGHT 2 NIGHT','PLENTY MONEY','PRAY','REAL','REASON','REGRET','REVIVE','SEED','STRANGER','TIME','TOUCH YOUR BODY','UNDERSTAND','WILLING','WINE','YOLO','BOUNCE','CHARM','EUPHORIA','FLEXY','GOLDEN','JOMO','MARS','PLAY','TONIGHT','BRAVE','COLD','FEELING','FORGIVE','HEART TO HEART','JOY','MY BROTHER','PANIC','SAFTY','WOMAN','BYE','CRIME','FEVER','FOR YOU','IMAGINATION','LOCATION','MY BUSINESS','PARTY TIME','SAVE ME','YOURS','ADDICTED','ANGELA','AYE','CHAMPION','COMPLY','CRIMINAL','FEARLESS','FOR ME','GOATED','HAPPINESS','INVASION','JEJE','MARAMMA','MOVING','ON MY MIND','SILVER','WINNER','AFTER PARTY','ANGELKEYS','CALLING','CLOSER','CONGO','DOSAGE','FEELING COLD','FOREVER','GOLD DIGGER','HOLD TIGHT','JANGLOVA','KELE','NO RULES','OVADOSE','SINNER','ALONE','AWAY','CALM DOWN','COLOUR','CONTROL','FANTASY','FOLAKE','GENTLE','HALIMA','HOPE','JARA','MANIFEST','MOVER','NOBODY','WHY','AFRIKA','AJEBO','AMARA','AMAZE ME','ANGELINA','ANGELO','AREWA','BE MINE','BIGGY BOYZ','BIGWIZ','BROKEN','CHEER UP','CLARA','CLASSIFIED','CO OPERATE','COASTER','CODEDLY','COLOBI','CONFIRMATION','CROSSFADE','CROWN','CRUISE','DESIRE','FIDEL','FIRE UP','FLY AWAY','FOLLOW FOLLOW','GIVER','GLORIA','HOLD ME CLOSE','IN MY SOUL','JOLO','JUICY','KALA','LEAD WAY','LEMONADE','LET\'S FLOW','LONDON','LONELY LONER','MANCHY','MARADONA','MEMORIES','MIRA','MONALISA','OLE','PROMISE','RELIEF','REMEMBER','RESONATE','RIDE ON','RUN AWAY','SAMANTHA','SEEKER','SIGNAL','SILVER SPOON','SIMPLICITY','SOSO','TAKE MY PAIN','TELL THEM','THE SKY','TOUCH','TWINKLING','UNSTOPPABLE','VANILLA','WAVY','WITH YOU','YABA'];
   // NEW UPLOADS: add each new beat title here, newest FIRST. They appear at the very top of page 1.
   // Example after your next upload:  var NEW_BEATS = ['MY NEW BEAT'];   (audio file: audio/my-new-beat.mp3)
   var NEW_BEATS = [];
@@ -449,7 +454,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   function beatLink(b){ return SITE_URL + '#beat-' + b.slug; }
   var ICON_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.8l7.4-4.4M8.3 13.2l7.4 4.4"/></svg>';
   var sel = {}; beats.forEach(function(b){sel[b.id]=1});  // 0 = MP3, 1 = WAV (default), 2 = Unlimited, 3 = Exclusive
-  var genreFilter = 'All';
+  var genreFilter = 'All', query = '';
   var PAGE_SIZE = 20, page = 1;  // beats per page
 
   var ICON_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>';
@@ -481,12 +486,12 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     return h+'</span>';
   }
   function renderStore(){
-    var list = beats.filter(function(b){return genreFilter==='All'||b.g===genreFilter});
+    var list = beats.filter(function(b){return (genreFilter==='All'||b.g===genreFilter) && (!query || b.t.toLowerCase().indexOf(query)>-1 || b.slug.indexOf(query.replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''))>-1)});
     var pages = Math.max(1, Math.ceil(list.length/PAGE_SIZE));
     page = Math.min(Math.max(page,1),pages);
     var from = (page-1)*PAGE_SIZE, shown = list.slice(from,from+PAGE_SIZE);
     var html;
-    if(!list.length) html = '<div class="group"><div class="list"><p class="empty">No beats in this genre yet.</p></div></div>';
+    if(!list.length) html = '<div class="group"><div class="list"><p class="empty">'+(query?'No beats match &ldquo;'+query.replace(/[<>&"]/g,'')+'&rdquo;.':'No beats in this genre yet.')+'</p></div></div>';
     else {
       var count = pages>1 ? 'Showing '+(from+1)+'&ndash;'+(from+shown.length)+' of '+list.length+' beats' : list.length+(list.length===1?' beat':' beats');
       html = '<div class="group"><div class="group-h"><h3>All Beats</h3><span>'+count+(list.some(function(b){return b.date})?' &middot; newest first':'')+'</span></div><div class="list">'+shown.map(rowHTML).join('')+'</div></div>';
@@ -507,6 +512,12 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     var c = e.target.closest('.chip'); if(!c) return;
     genreFilter = c.getAttribute('data-g'); page = 1; renderChips(); renderStore();
   });
+  var qT;
+  $('#q').addEventListener('input',function(){
+    var v = this.value; $('#qClear').hidden = !v;
+    clearTimeout(qT); qT = setTimeout(function(){ query = v.trim().toLowerCase(); page = 1; renderStore(); },120);
+  });
+  $('#qClear').addEventListener('click',function(){ $('#q').value = ''; this.hidden = true; query = ''; page = 1; renderStore(); $('#q').focus(); });
   $('#store').addEventListener('click',function(e){
     var gt = e.target.closest('[data-goto]');
     if(gt){ page = +gt.getAttribute('data-goto'); renderStore(); $('#store').scrollIntoView({block:'start'}); return; }
@@ -562,7 +573,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     var b = beats.filter(function(x){return x.slug===m[1] || x.old===m[1]})[0];
     if(!b) return;
     var want = Math.floor(beats.indexOf(b)/PAGE_SIZE)+1;
-    if(genreFilter !== 'All' || page !== want){ genreFilter = 'All'; page = want; renderChips(); renderStore(); }
+    if(query || genreFilter !== 'All' || page !== want){ genreFilter = 'All'; query = ''; $('#q').value = ''; $('#qClear').hidden = true; page = want; renderChips(); renderStore(); }
     var row = document.getElementById('beat-'+b.slug);
     if(!row) return;
     document.querySelectorAll('.beat.linked').forEach(function(r){r.classList.remove('linked')});
