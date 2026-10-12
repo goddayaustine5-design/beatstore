@@ -390,7 +390,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
 
 <script src="config.js"></script>
 <script>
-(function(){
+function startStore(REMOTE){
   var NGN = new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0});
   // Naira is the base price. Other currencies are converted from naira with a live exchange rate (see "currency" below).
   var CURRENCIES = [{c:'NGN',n:'Naira (₦)',w:'Nigerian naira'},{c:'USD',n:'US Dollar ($)',w:'US dollars'},{c:'GBP',n:'British Pound (£)',w:'British pounds'},{c:'EUR',n:'Euro (€)',w:'euros'}];
@@ -427,11 +427,9 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   // To add details for a beat later, give it: g (genre), bpm, key, len ('2:41'), date ('YYYY-MM-DD')
   // and a real preview. Until a preview is uploaded the play button stays disabled.
   var TITLES = ['DENSITY','DRIP','FALLEN','FAREWELL','GIVE ME LOVE','JAYE','JIGGY','JOVIA','LIGHT','MEAN','MOON LIGHT','MY PAIN','NEVER','NIGHT 2 NIGHT','PLENTY MONEY','PRAY','REAL','REASON','REGRET','REVIVE','SEED','STRANGER','TIME','TOUCH YOUR BODY','UNDERSTAND','WILLING','WINE','YOLO','BOUNCE','CHARM','EUPHORIA','FLEXY','GOLDEN','JOMO','MARS','PLAY','TONIGHT','BRAVE','COLD','FEELING','FORGIVE','HEART TO HEART','JOY','MY BROTHER','PANIC','SAFTY','WOMAN','BYE','CRIME','FEVER','FOR YOU','IMAGINATION','LOCATION','MY BUSINESS','PARTY TIME','SAVE ME','YOURS','ADDICTED','ANGELA','AYE','CHAMPION','COMPLY','CRIMINAL','FEARLESS','FOR ME','GOATED','HAPPINESS','INVASION','JEJE','MARAMMA','MOVING','ON MY MIND','SILVER','AFTER PARTY','ANGELKEYS','CALLING','CLOSER','CONGO','DOSAGE','FEELING COLD','FOREVER','GOLD DIGGER','HOLD TIGHT','JANGLOVA','KELE','NO RULES','OVADOSE','SINNER','ALONE','AWAY','CALM DOWN','COLOUR','CONTROL','FANTASY','FOLAKE','GENTLE','HALIMA','HOPE','JARA','MANIFEST','MOVER','NOBODY','WHY','AFRIKA','AJEBO','AMARA','AMAZE ME','ANGELINA','ANGELO','AREWA','BE MINE','BIGGY BOYZ','BIGWIZ','BROKEN','CHEER UP','CLARA','CLASSIFIED','CO OPERATE','COASTER','CODEDLY','COLOBI','CONFIRMATION','CROSSFADE','CROWN','CRUISE','DESIRE','FIDEL','FIRE UP','FLY AWAY','FOLLOW FOLLOW','GIVER','GLORIA','HOLD ME CLOSE','IN MY SOUL','JOLO','JUICY','KALA','LEAD WAY','LEMONADE','LET\'S FLOW','LONDON','LONELY LONER','MANCHY','MARADONA','MEMORIES','MIRA','MONALISA','OLE','PROMISE','RELIEF','REMEMBER','RESONATE','RIDE ON','RUN AWAY','SAMANTHA','SEEKER','SIGNAL','SILVER SPOON','SIMPLICITY','SOSO','TAKE MY PAIN','TELL THEM','THE SKY','TOUCH','TWINKLING','UNSTOPPABLE','VANILLA','WAVY','WITH YOU','YABA'];
-  // NEW UPLOADS: add each new beat title here, newest FIRST. They appear at the very top of page 1.
-  // Example after your next upload:  var NEW_BEATS = ['MY NEW BEAT'];   (audio file: audio/my-new-beat.mp3)
-  var NEW_BEATS = [];
-  var beats = NEW_BEATS.map(function(t,i){ return {id:1000+i,t:t,h:((1000+i)*47)%360}; })
-    .concat(TITLES.map(function(t,i){ return {id:i+1,t:t,h:(i*47)%360}; }));
+  if(REMOTE && REMOTE.length) TITLES = REMOTE;   // from beats.json
+  function hueOf(t){ var h = 7; for(var i=0;i<t.length;i++) h = (h*31 + t.charCodeAt(i)) % 360; return h; }
+  var beats = TITLES.map(function(t,i){ return {id:i+1,t:t,h:hueOf(t)}; });
   var byId = {}; beats.forEach(function(b){byId[b.id]=b});
   // Newest first once upload dates are filled in. Beats without a date keep the order above.
   beats.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
@@ -991,6 +989,24 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   }
   jumpToBeats();
   window.addEventListener('load',jumpToBeats);
+}
+// The beat list lives in beats.json (newest first). If it can't be loaded the built-in list below is used.
+(function(){
+  var done = false;
+  function go(list){ if(done) return; done = true; startStore(list); }
+  try{
+    fetch('beats.json',{cache:'no-cache'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){
+      var a = Array.isArray(d) ? d : (d && d.beats);
+      var seen = {}, out = [];
+      (a||[]).forEach(function(t){
+        if(typeof t !== 'string') return;
+        t = t.replace(/[<>"`\\]/g,'').replace(/\s+/g,' ').trim().toUpperCase(); if(!t) return;
+        var k = t.toLowerCase().replace(/[^a-z0-9]+/g,'-'); if(seen[k]) return; seen[k] = 1; out.push(t);
+      });
+      go(out.length ? out : null);
+    }).catch(function(){ go(null); });
+    setTimeout(function(){ go(null); },6000);
+  }catch(_){ go(null); }
 })();
 </script>
 
