@@ -112,6 +112,11 @@ section{padding-block:56px 0}
 .pager{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:20px}
 .pager span{font:500 .9rem/1 var(--f-mono);color:var(--muted)}
 .pager .btn{padding:10px 18px;font-size:.95rem}
+.pager{flex-wrap:wrap;gap:10px}
+.pnums{display:flex;gap:6px}
+.pn{min-width:40px;height:40px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:500 .9rem/1 var(--f-mono);cursor:pointer}
+.pn:hover{border-color:#3a3f4d}
+.pn.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .pager .btn[disabled]{opacity:.4;cursor:not-allowed}
 #store{scroll-margin-top:90px}
 .beat{position:relative;display:grid;grid-template-columns:56px minmax(0,1fr) auto auto;grid-template-areas:"play info fmts buy";align-items:center;gap:18px;padding:14px 18px;border-top:1px solid var(--line)}
@@ -417,7 +422,11 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   // To add details for a beat later, give it: g (genre), bpm, key, len ('2:41'), date ('YYYY-MM-DD')
   // and a real preview. Until a preview is uploaded the play button stays disabled.
   var TITLES = ['DENSITY','DRIP','FALLEN','FAREWELL','GIVE ME LOVE','JAYE','JIGGY','JOVIA','LIGHT','MEAN','MOON LIGHT','MY PAIN','NEVER','NIGHT 2 NIGHT','PLENTY MONEY','PRAY','REAL','REASON','REGRET','REVIVE','SEED','STRANGER','TIME','TOUCH YOUR BODY','UNDERSTAND','WILLING','WINE','YOLO','BOUNCE','CHARM','EUPHORIA','FLEXY','GOLDEN','JOMO','MARS','PLAY','TONIGHT','BRAVE','COLD','FEELING','FORGIVE','HEART TO HEART','JOY','MY BROTHER','PANIC','SAFTY','WOMAN','BYE','CRIME','FEVER','FOR YOU','IMAGINATION','LOCATION','MY BUSINESS','PARTY TIME','SAVE ME','YOURS','ADDICTED','ANGELA','AYE','CHAMPION','COMPLY','CRIMINAL','FEARLESS','FOR ME','GOATED','HAPPINESS','INVASION','JEJE','MARAMMA','MOVING','ON MY MIND','SILVER','WINNER','AFTER PARTY','ANGELKEYS','CALLING','CLOSER','CONGO','DOSAGE','FEELING COLD','FOREVER','GOLD DIGGER','HOLD TIGHT','JANGLOVA','KELE','NO RULES','OVADOSE','SINNER','ALONE','AWAY','CALM DOWN','COLOUR','CONTROL','FANTASY','FOLAKE','GENTLE','HALIMA','HOPE','JARA','MANIFEST','MOVER','NOBODY','WHY'];
-  var beats = TITLES.map(function(t,i){ return {id:i+1,t:t,h:(i*47)%360}; });
+  // NEW UPLOADS: add each new beat title here, newest FIRST. They appear at the very top of page 1.
+  // Example after your next upload:  var NEW_BEATS = ['MY NEW BEAT'];   (audio file: audio/my-new-beat.mp3)
+  var NEW_BEATS = [];
+  var beats = NEW_BEATS.map(function(t,i){ return {id:1000+i,t:t,h:((1000+i)*47)%360}; })
+    .concat(TITLES.map(function(t,i){ return {id:i+1,t:t,h:(i*47)%360}; }));
   var byId = {}; beats.forEach(function(b){byId[b.id]=b});
   // Newest first once upload dates are filled in. Beats without a date keep the order above.
   beats.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
@@ -466,6 +475,11 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
       '<div class="buy"><button class="share" type="button" aria-label="Copy link to '+b.t+'" title="Copy link">'+ICON_SHARE+'<span class="st">Share</span></button><span class="price">'+money(PRICES[sel[b.id]])+'</span><button class="btn btn-primary buy-btn" type="button">Buy</button></div>'+
       '<i class="prog" aria-hidden="true"></i></article>';
   }
+  function pageNums(cur,total){
+    var start = Math.min(Math.max(cur-2,1),Math.max(total-4,1)), end = Math.min(start+4,total), h = '<span class="pnums">';
+    for(var i=start;i<=end;i++) h += '<button type="button" class="pn'+(i===cur?' on':'')+'" data-goto="'+i+'"'+(i===cur?' aria-current="page"':'')+' aria-label="Page '+i+'">'+i+'</button>';
+    return h+'</span>';
+  }
   function renderStore(){
     var list = beats.filter(function(b){return genreFilter==='All'||b.g===genreFilter});
     var pages = Math.max(1, Math.ceil(list.length/PAGE_SIZE));
@@ -476,7 +490,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     else {
       var count = pages>1 ? 'Showing '+(from+1)+'&ndash;'+(from+shown.length)+' of '+list.length+' beats' : list.length+(list.length===1?' beat':' beats');
       html = '<div class="group"><div class="group-h"><h3>All Beats</h3><span>'+count+(list.some(function(b){return b.date})?' &middot; newest first':'')+'</span></div><div class="list">'+shown.map(rowHTML).join('')+'</div></div>';
-      if(pages>1) html += '<nav class="pager" aria-label="Beat pages"><button class="btn btn-ghost" type="button" data-pg="prev"'+(page<=1?' disabled':'')+'>&larr; Prev</button><span aria-live="polite">Page '+page+' of '+pages+'</span><button class="btn btn-ghost" type="button" data-pg="next"'+(page>=pages?' disabled':'')+'>Next &rarr;</button></nav>';
+      if(pages>1) html += '<nav class="pager" aria-label="Beat pages"><button class="btn btn-ghost" type="button" data-pg="prev"'+(page<=1?' disabled':'')+'>&larr; Prev</button>'+pageNums(page,pages)+'<button class="btn btn-ghost" type="button" data-pg="next"'+(page>=pages?' disabled':'')+'>Next &rarr;</button></nav>';
     }
     $('#store').innerHTML = html;
     paintPlaying();
@@ -494,6 +508,8 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     genreFilter = c.getAttribute('data-g'); page = 1; renderChips(); renderStore();
   });
   $('#store').addEventListener('click',function(e){
+    var gt = e.target.closest('[data-goto]');
+    if(gt){ page = +gt.getAttribute('data-goto'); renderStore(); $('#store').scrollIntoView({block:'start'}); return; }
     var pg = e.target.closest('[data-pg]');
     if(pg){
       if(pg.disabled) return;
