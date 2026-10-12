@@ -190,6 +190,9 @@ section{padding-block:56px 0}
 .pb.favon{color:#ff5d7a}
 .pb.favon svg{fill:currentColor}
 .pb.off{color:var(--muted)}
+.player.buffering #plTitle::after{content:' · loading…';color:var(--muted);font-weight:400}
+.player.buffering .pb.main{animation:plp 1s ease-in-out infinite}
+@keyframes plp{50%{opacity:.55}}
 .pl-seek{display:flex;align-items:center;gap:10px;max-width:1100px;margin:4px auto 0;font:500 .75rem var(--f-mono);color:var(--muted)}
 .pl-seek input{flex:1;accent-color:var(--accent);height:20px;margin:0}
 body.has-player{padding-bottom:120px}
@@ -558,6 +561,7 @@ function startStore(REMOTE){
     $('#store').innerHTML = html;
     paintPlaying();
     if(typeof paintFavs === 'function') paintFavs();
+    if(typeof prioritizeProbes === 'function') prioritizeProbes(shown);
   }
   function renderChips(){
     var gs = ['All'];
@@ -882,9 +886,11 @@ function startStore(REMOTE){
   // One shared audio element for every preview, so phones keep allowing playback when a track ends and the next one starts.
   var AUD = new Audio(); AUD.preload = 'auto';
   AUD.addEventListener('ended',function(){ if(A.el===AUD) onEnded(); });
-  AUD.addEventListener('error',function(){ if(A.el===AUD) stop(); });
+  AUD.addEventListener('error',function(){ pl.el.classList.remove('buffering'); releaseProbes(); if(A.el===AUD) stop(); });
   AUD.addEventListener('timeupdate',function(){ if(A.el===AUD) tagCheck(AUD); });
   AUD.addEventListener('play',function(){ if(A.el===AUD) paintPlaying(); });
+  AUD.addEventListener('waiting',function(){ if(A.el===AUD) pl.el.classList.add('buffering'); });
+  AUD.addEventListener('playing',function(){ pl.el.classList.remove('buffering'); releaseProbes(); });
   AUD.addEventListener('pause',function(){ if(A.el===AUD) paintPlaying(); });
   AUD.addEventListener('loadedmetadata',function(){ if(A.el===AUD) updatePlayer(); });
   function start(id){
@@ -892,6 +898,7 @@ function startStore(REMOTE){
     if(b.src){
       stop();
       AUD.volume = 1; AUD.src = b.src;
+      holdProbes(); pl.el.classList.add('buffering');
       A.el = AUD; A.cur = id;
       TAG.slot = 0; playTag(AUD);   // first tag starts inside the tap so phones allow it
       var p = AUD.play(); if(p && p.catch) p.catch(function(){ if(A.el===AUD){ paintPlaying(); } });
@@ -987,6 +994,7 @@ function startStore(REMOTE){
     var b = A.cur ? byId[A.cur] : null, show = !!b;
     pl.el.hidden = !show; document.body.classList.toggle('has-player',show);
     if(!show){
+      pl.el.classList.remove('buffering');
       try{ if('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none'; }catch(_){}
       return;
     }
@@ -1074,30 +1082,40 @@ function startStore(REMOTE){
   // A beat with a file there gets a working play button and its length filled in.
   function fmtLen(sec){ var m = Math.floor(sec/60), s = Math.round(sec%60); if(s===60){ m++; s=0; } return m+':'+(s<10?'0':'')+s; }
   var rerender = null;
-  beats.forEach(function(b){
-    var probe = new Audio();
+  function softRerender(){ clearTimeout(rerender); rerender = setTimeout(function(){ renderStore(); goToHash(); },150); }
+  // The page checks which beats have a preview file, but only a few at a time, so a beat you tap starts quickly.
+  var PROBE_MAX = 4, probeQ = beats.slice(), probing = 0, probeHold = false;
+  function prioritizeProbes(list){
+    var front = list.filter(function(b){ return probeQ.indexOf(b) > -1; });
+    if(front.length) probeQ = front.concat(probeQ.filter(function(b){ return front.indexOf(b) < 0; }));
+  }
+  function pumpProbes(){ while(!probeHold && probing < PROBE_MAX && probeQ.length) probeOne(probeQ.shift()); }
+  function holdProbes(){ probeHold = true; setTimeout(releaseProbes,5000); }
+  function releaseProbes(){ if(!probeHold) return; probeHold = false; pumpProbes(); }
+  function probeOne(b){
+    probing++;
+    var finished = false, tryOld = false, probe = new Audio(), to;
     probe.preload = 'metadata';
-    var tryOld = false;
-    function giveUp(){
-      if(b.src || b.missing) return;
-      b.missing = true;
-      clearTimeout(rerender);
-      rerender = setTimeout(function(){ renderStore(); goToHash(); },120);
+    function done(){
+      if(finished) return; finished = true; clearTimeout(to);
+      try{ probe.removeAttribute('src'); probe.load(); }catch(_){}   // free the connection
+      probing--; pumpProbes();
     }
+    function fail(){ if(finished) return; if(!b.src && !b.missing){ b.missing = true; softRerender(); } done(); }
     probe.addEventListener('error',function(){
-      if(!tryOld && b.old){ tryOld = true; probe.src = AUDIO_DIR+b.old+'.mp3'; }
-      else giveUp();
+      if(finished) return;
+      if(!tryOld && b.old){ tryOld = true; probe.src = AUDIO_DIR+b.old+'.mp3'; } else fail();
     });
-    setTimeout(giveUp,12000);
     probe.addEventListener('loadedmetadata',function(){
-      if(!isFinite(probe.duration) || probe.duration <= 0) return;
+      if(finished || !isFinite(probe.duration) || probe.duration <= 0) return;
       b.src = tryOld ? AUDIO_DIR+b.old+'.mp3' : AUDIO_DIR+b.slug+'.mp3'; b.missing = false;
       if(!b.len) b.len = fmtLen(probe.duration);
-      clearTimeout(rerender);
-      rerender = setTimeout(function(){ renderStore(); goToHash(); },120);
+      softRerender(); done();
     });
+    to = setTimeout(fail,12000);
     probe.src = AUDIO_DIR+b.slug+'.mp3';
-  });
+  }
+  pumpProbes();
 
   /* ---------- currency ---------- */
   // Prices are stored in naira. For dollars, pounds and euros the page asks a free exchange-rate service
