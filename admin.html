@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin | Austino Pro</title>
+<style>
+:root{--bg:#0c0d11;--surface:#14161c;--line:#262a34;--fg:#eceef3;--muted:#9aa1b2;--accent:#7c5cff;--ok:#3ecf8e;--warn:#f5b84b;--bad:#ff6b6b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:24px 16px 120px}
+h1{font-size:1.5rem;margin:0 0 4px}
+h2{font-size:1.05rem;margin:0 0 12px}
+p.sub{color:var(--muted);margin:0 0 24px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:18px}
+label{display:block;font-size:.85rem;color:var(--muted);margin:12px 0 6px}
+input[type=text],input[type=password],input[type=search]{width:100%;background:#0f1116;color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit}
+input:focus{outline:none;border-color:#5a6072}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:#1b1e26;color:var(--fg);padding:10px 14px}
+button:hover{border-color:#3a3f4d}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+button.primary[disabled]{opacity:.45;cursor:not-allowed}
+button.small{padding:6px 10px;font-size:.85rem}
+button.danger{color:var(--bad)}
+.hint{color:var(--muted);font-size:.85rem}
+.msg{margin-top:12px;font-size:.92rem;white-space:pre-wrap}
+.msg.err{color:var(--bad)} .msg.ok{color:var(--ok)}
+.hidden{display:none!important}
+.drop{border:1.5px dashed #3a3f4d;border-radius:12px;padding:20px;text-align:center;color:var(--muted);cursor:pointer}
+.drop.over{border-color:var(--accent);color:var(--fg)}
+.queue{margin-top:12px;display:grid;gap:8px}
+.q{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;background:#0f1116;border:1px solid var(--line);border-radius:10px;padding:8px}
+.q .fn{grid-column:1/-1;color:var(--muted);font-size:.78rem;word-break:break-all}
+.pos label{display:inline-flex;gap:6px;align-items:center;margin:0 16px 0 0;color:var(--fg);font-size:.95rem}
+.list{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.b{display:grid;grid-template-columns:34px 1fr auto auto;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line)}
+.b:last-child{border-bottom:0}
+.b .n{color:var(--muted);font:500 .8rem ui-monospace,monospace}
+.b .t{font-weight:600;word-break:break-word}
+.tag{font-size:.72rem;padding:2px 7px;border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.tag.ok{color:var(--ok);border-color:#1f5a41}.tag.warn{color:var(--warn);border-color:#6b5320}.tag.bad{color:var(--bad);border-color:#6b2a2a}.tag.new{color:#b9a8ff;border-color:#4a3d99}
+.b.removed .t{text-decoration:line-through;opacity:.5}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#11131aee;backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px 16px}
+.bar .in{max-width:900px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.steps li{margin:6px 0;color:var(--muted)}
+details summary{cursor:pointer;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Beat admin</h1>
+  <p class="sub">Add, reorder and remove beats without touching GitHub. Changes go live about a minute after you publish.</p>
+
+  <section id="login" class="card">
+    <h2>Connect to GitHub</h2>
+    <label for="repo">Your repository (owner/name)</label>
+    <input id="repo" type="text" placeholder="yourname/your-site" autocomplete="off" spellcheck="false">
+    <label for="branch">Branch</label>
+    <input id="branch" type="text" value="main" autocomplete="off" spellcheck="false">
+    <label for="token">Access token</label>
+    <input id="token" type="password" placeholder="github_pat_..." autocomplete="off">
+    <div class="row" style="margin-top:14px">
+      <label style="margin:0;display:inline-flex;gap:8px;align-items:center"><input id="remember" type="checkbox" checked> Remember on this device</label>
+    </div>
+    <div class="row" style="margin-top:14px"><button id="connect" class="primary">Connect</button></div>
+    <p class="hint">The token is kept only in this browser and is sent only to GitHub. Use a token that has access to this one repository only.</p>
+    <div id="loginMsg" class="msg"></div>
+    <details style="margin-top:12px"><summary>How do I get a token?</summary>
+      <ol class="steps">
+        <li>On GitHub, open Settings, then Developer settings, then Personal access tokens, then Fine-grained tokens, then Generate new token.</li>
+        <li>Give it any name, choose an expiry (for example 90 days), and under Repository access choose "Only select repositories" and pick your site's repository.</li>
+        <li>Under Permissions, Repository permissions, set <b>Contents</b> to <b>Read and write</b>.</li>
+        <li>Click Generate token, copy it, and paste it above.</li>
+      </ol>
+    </details>
+  </section>
+
+  <div id="app" class="hidden">
+    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+      <span class="hint" id="who"></span>
+      <button id="signout" class="small">Sign out</button>
+    </div>
+
+    <section class="card">
+      <h2>Add beats</h2>
+      <div id="drop" class="drop" tabindex="0">Choose preview MP3 files (or drop them here)<br><span class="hint">You can pick several at once. The title is taken from the file name and you can change it.</span></div>
+      <input id="files" type="file" accept=".mp3,audio/mpeg" multiple class="hidden">
+      <div id="queue" class="queue"></div>
+      <div id="posBox" class="pos hidden" style="margin-top:14px">
+        <label style="margin:0 0 6px">Where should they go?</label>
+        <label><input type="radio" name="pos" value="top" checked> Top of the list (new beats)</label>
+        <label><input type="radio" name="pos" value="bottom"> Bottom of the list (older beats)</label>
+      </div>
+      <div class="row" style="margin-top:14px"><button id="addBtn" class="primary hidden">Add to list</button></div>
+      <div id="addMsg" class="msg"></div>
+    </section>
+
+    <section class="card">
+      <h2>Your beats <span class="hint" id="count"></span></h2>
+      <input id="filter" type="search" placeholder="Search your beats…" autocomplete="off">
+      <div id="list" class="list" style="margin-top:12px"></div>
+      <p class="hint">"Top" moves a beat to the top of page 1. "Remove" takes it off the site (and its preview file when you publish).</p>
+    </section>
+  </div>
+</div>
+
+<div id="bar" class="bar hidden"><div class="in">
+  <span id="pending" class="hint"></span>
+  <span class="row"><button id="discard">Discard</button><button id="publish" class="primary">Publish changes</button></span>
+</div></div>
+
+<script>
+(function(){
+  var API = 'https://api.github.com';
+  var OLD_SLUGS = {"LET'S FLOW":"let's-flow",'ALONE':'aione','OVADOSE':'overdose','GIVE ME LOVE':'give-me-love','JIGGY':'jiggy-2','TIME':'time-new','TOUCH YOUR BODY':'touch-you-body-new-2','WINE':'wine-2'};
+  var MAX_BYTES = 20*1024*1024;
+  var TITLE_RE = /^[A-Z0-9][A-Z0-9 '&.,!+()_-]{0,59}$/;
+  var $ = function(s){ return document.querySelector(s); };
+  function slug(t){ return t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+  function guessTitle(fn){ return fn.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ').replace(/\s+/g,' ').trim().toUpperCase(); }
+  function lsGet(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }
+  function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }
+  function lsDel(k){ try{ localStorage.removeItem(k); }catch(_){} }
+  function say(el,text,cls){ el.textContent = text||''; el.className = 'msg'+(cls?' '+cls:''); }
+
+  var S = { repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
+  // S.list = working order of titles. S.files[title] = File for new/replaced previews. S.removed[title] = true.
+
+  function gh(method,path,body,accept){
+    var h = { 'Authorization':'Bearer '+S.token, 'Accept': accept || 'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28' };
+    if(body) h['Content-Type'] = 'application/json';
+    return fetch(API+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined,cache:'no-store'}).then(function(r){
+      if(r.ok) return accept && /raw/.test(accept) ? r.text() : r.json();
+      return r.text().then(function(t){
+        var m = ''; try{ m = JSON.parse(t).message || ''; }catch(_){}
+        var e = new Error(r.status===401 ? 'GitHub rejected the token (expired or wrong).' :
+          r.status===403 ? 'GitHub refused: '+(m||'the token may not allow writing to this repository.') :
+          r.status===404 ? 'Not found. Check the repository name, branch and that the token has access to it.' : 'GitHub error '+r.status+(m?': '+m:''));
+        e.status = r.status; throw e;
+      });
+    });
+  }
+  function repoPath(p){ return '/repos/'+S.repo+p; }
+
+  function previewState(t){
+    var s = slug(t), cands = [s+'.mp3'];
+    if(OLD_SLUGS[t]) cands.push(OLD_SLUGS[t]+'.mp3');
+    for(var i=0;i<cands.length;i++) if(S.audio[cands[i]]) return 'ok';
+    for(var j=0;j<cands.length;j++) if(S.audioLower[cands[j].toLowerCase()]) return 'case';
+    return 'none';
+  }
+
+  function load(){
+    say($('#loginMsg'),'Connecting…');
+    return gh('GET',repoPath('')).then(function(r){
+      if(!r.permissions || r.permissions.push === false) throw new Error('This token can read the repository but not write to it. Set Contents to "Read and write".');
+      return gh('GET',repoPath('/git/ref/heads/'+encodeURIComponent(S.branch)).replace('%2F','/'));
+    }).then(function(ref){
+      return gh('GET',repoPath('/git/commits/'+ref.object.sha)).then(function(c){ return gh('GET',repoPath('/git/trees/'+c.tree.sha+'?recursive=1')); });
+    }).then(function(tree){
+      S.audio = {}; S.audioLower = {};
+      (tree.tree||[]).forEach(function(e){
+        if(e.type==='blob' && /^audio\//.test(e.path)){ var n = e.path.slice(6); S.audio[n] = e.sha; S.audioLower[n.toLowerCase()] = n; }
+      });
+      return gh('GET',repoPath('/contents/beats.json?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json').catch(function(e){
+        if(e.status===404) throw new Error('beats.json was not found in the repository. Upload the beats.json file I sent you to the main folder first.');
+        throw e;
+      });
+    }).then(function(text){
+      var arr; try{ arr = JSON.parse(text); }catch(_){ throw new Error('beats.json could not be read (it is not valid JSON).'); }
+      if(!Array.isArray(arr)) throw new Error('beats.json should be a list of titles.');
+      S.originalText = text; S.original = arr.map(String); S.list = S.original.slice();
+      S.files = {}; S.removed = {}; S.queue = [];
+      $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
+      $('#who').textContent = S.repo+' · '+S.branch;
+      say($('#loginMsg'),''); render(); renderQueue();
+    });
+  }
+
+  function changeCount(){
+    var n = 0, i;
+    var removedList = Object.keys(S.removed).length;
+    var added = S.list.filter(function(t){ return S.original.indexOf(t)<0; }).length;
+    var orderChanged = false;
+    var kept = S.list.filter(function(t){ return !S.removed[t]; });
+    var ko = S.original.filter(function(t){ return !S.removed[t]; });
+    for(i=0;i<kept.length;i++) if(kept[i]!==ko[i]){ orderChanged = true; break; }
+    return { removed:removedList, added:added, files:Object.keys(S.files).length, moved: orderChanged && !added ? 1 : (orderChanged?1:0) };
+  }
+
+  function render(){
+    var q = $('#filter').value.trim().toLowerCase(), box = $('#list');
+    box.textContent = '';
+    var shown = 0;
+    S.list.forEach(function(t,i){
+      if(q && t.toLowerCase().indexOf(q)<0) return;
+      shown++;
+      var row = document.createElement('div'); row.className = 'b'+(S.removed[t]?' removed':'');
+      var n = document.createElement('span'); n.className = 'n'; n.textContent = i+1;
+      var name = document.createElement('span'); name.className = 't'; name.textContent = t;
+      var tags = document.createElement('span');
+      var isNew = S.original.indexOf(t)<0, st = S.files[t] ? 'new' : previewState(t);
+      var tag = document.createElement('span'); tag.className = 'tag '+(st==='ok'?'ok':st==='case'?'warn':st==='new'?'new':'bad');
+      tag.textContent = st==='ok' ? 'preview ✓' : st==='case' ? 'file name case' : st==='new' ? (isNew?'new · ':'')+'preview ready' : 'no preview';
+      if(st==='case') tag.title = 'The file exists but its name has capital letters. Rename it to '+slug(t)+'.mp3';
+      tags.appendChild(tag);
+      var act = document.createElement('span'); act.className = 'row';
+      if(!S.removed[t]){
+        if(i>0){ var up = document.createElement('button'); up.className = 'small'; up.textContent = 'Top'; up.onclick = function(){ moveTop(t); }; act.appendChild(up); }
+        var rm = document.createElement('button'); rm.className = 'small danger'; rm.textContent = 'Remove'; rm.onclick = function(){ remove(t); }; act.appendChild(rm);
+      } else {
+        var un = document.createElement('button'); un.className = 'small'; un.textContent = 'Undo'; un.onclick = function(){ delete S.removed[t]; render(); }; act.appendChild(un);
+      }
+      row.appendChild(n); row.appendChild(name); row.appendChild(tags); row.appendChild(act); box.appendChild(row);
+    });
+    if(!shown){ var e = document.createElement('p'); e.className = 'hint'; e.style.padding = '12px'; e.textContent = 'Nothing matches.'; box.appendChild(e); }
+    var live = S.list.filter(function(t){ return !S.removed[t]; }).length;
+    $('#count').textContent = '· '+live+' beats';
+    updateBar();
+  }
+
+  function updateBar(){
+    var c = changeCount(), parts = [];
+    if(c.added) parts.push(c.added+' added');
+    if(c.removed) parts.push(c.removed+' removed');
+    if(c.moved && !c.added) parts.push('order changed');
+    var replaced = Object.keys(S.files).filter(function(t){ return S.original.indexOf(t)>=0; }).length;
+    if(replaced) parts.push(replaced+' preview'+(replaced>1?'s':'')+' replaced');
+    $('#bar').classList.toggle('hidden',!parts.length);
+    $('#pending').textContent = parts.join(' · ');
+  }
+
+  function moveTop(t){ var i = S.list.indexOf(t); if(i>0){ S.list.splice(i,1); S.list.unshift(t); render(); } }
+  function remove(t){
+    if(S.original.indexOf(t)<0){ var i = S.list.indexOf(t); S.list.splice(i,1); delete S.files[t]; }
+    else S.removed[t] = true;
+    render();
+  }
+
+  /* ---- add queue ---- */
+  function addFiles(files){
+    Array.prototype.forEach.call(files,function(f){
+      if(!/\.mp3$/i.test(f.name)){ say($('#addMsg'),'Skipped "'+f.name+'": only .mp3 files are supported.','err'); return; }
+      if(f.size > MAX_BYTES){ say($('#addMsg'),'Skipped "'+f.name+'": larger than 20 MB. A preview should be much smaller.','err'); return; }
+      S.queue.push({file:f,title:guessTitle(f.name)});
+    });
+    renderQueue();
+  }
+  function renderQueue(){
+    var box = $('#queue'); box.textContent = '';
+    S.queue.forEach(function(it,i){
+      var d = document.createElement('div'); d.className = 'q';
+      var inp = document.createElement('input'); inp.type = 'text'; inp.value = it.title; inp.setAttribute('aria-label','Beat title'); inp.maxLength = 60;
+      inp.oninput = function(){ it.title = inp.value; };
+      var x = document.createElement('button'); x.className = 'small'; x.textContent = '×'; x.setAttribute('aria-label','Remove from queue'); x.onclick = function(){ S.queue.splice(i,1); renderQueue(); };
+      var fn = document.createElement('span'); fn.className = 'fn'; fn.textContent = it.file.name+' · '+(it.file.size/1048576).toFixed(1)+' MB';
+      d.appendChild(inp); d.appendChild(x); d.appendChild(fn); box.appendChild(d);
+    });
+    var has = S.queue.length>0;
+    $('#addBtn').classList.toggle('hidden',!has); $('#posBox').classList.toggle('hidden',!has);
+  }
+  function commitQueue(){
+    var msgs = [], top = document.querySelector('input[name=pos]:checked').value === 'top', adds = [];
+    for(var i=0;i<S.queue.length;i++){
+      var it = S.queue[i], t = it.title.replace(/\s+/g,' ').trim().toUpperCase();
+      if(!TITLE_RE.test(t)){ say($('#addMsg'),'"'+it.title+'" is not a usable title. Use letters, numbers, spaces and simple punctuation (up to 60 characters).','err'); return; }
+      if(!slug(t)){ say($('#addMsg'),'"'+it.title+'" needs at least one letter or number.','err'); return; }
+      for(var j=0;j<adds.length;j++) if(slug(adds[j].t)===slug(t)){ say($('#addMsg'),'"'+t+'" appears twice in this batch.','err'); return; }
+      adds.push({t:t,file:it.file});
+    }
+    var newTitles = [];
+    adds.forEach(function(a){
+      var ex = S.list.filter(function(x){ return slug(x)===slug(a.t); })[0];
+      if(ex){
+        if(S.removed[ex]){ delete S.removed[ex]; S.files[ex] = a.file; msgs.push('"'+ex+'" was marked removed, so it has been restored with the new preview.'); }
+        else { S.files[ex] = a.file; msgs.push('"'+ex+'" is already in your list, so only its preview will be replaced.'); }
+      } else { S.files[a.t] = a.file; newTitles.push(a.t); }
+    });
+    if(top) S.list = newTitles.concat(S.list); else S.list = S.list.concat(newTitles);
+    S.queue = []; renderQueue(); render();
+    say($('#addMsg'),(newTitles.length? newTitles.length+' beat'+(newTitles.length>1?'s':'')+' added to the '+(top?'top':'bottom')+'. ':'')+msgs.join(' ')+' Press "Publish changes" to make them live.','ok');
+    if(top) $('#list').scrollTop = 0;
+  }
+
+  /* ---- publish ---- */
+  function toB64(file){
+    return new Promise(function(res,rej){
+      var r = new FileReader();
+      r.onload = function(){ res(String(r.result).split(',')[1]||''); };
+      r.onerror = function(){ rej(new Error('Could not read '+file.name)); };
+      r.readAsDataURL(file);
+    });
+  }
+  function jsonText(list){ return '[\n'+list.map(function(t){ return '  '+JSON.stringify(t); }).join(',\n')+'\n]\n'; }
+
+  function publish(){
+    var btn = $('#publish'); btn.disabled = true; $('#discard').disabled = true;
+    var final = S.list.filter(function(t){ return !S.removed[t]; });
+    if(!final.length){ alert('The list would be empty. Keep at least one beat.'); btn.disabled = false; $('#discard').disabled = false; return; }
+    var removedTitles = Object.keys(S.removed);
+    var ok = removedTitles.length ? confirm('Remove '+removedTitles.length+' beat'+(removedTitles.length>1?'s':'')+' from the site and delete the preview file'+(removedTitles.length>1?'s':'')+'?') : true;
+    if(!ok){ btn.disabled = false; $('#discard').disabled = false; return; }
+    var treeItems = [], msg = [], commitSha, baseTree;
+    function st(t){ $('#pending').textContent = t; }
+    st('Checking GitHub…');
+    gh('GET',repoPath('/git/ref/heads/'+encodeURIComponent(S.branch)).replace('%2F','/')).then(function(ref){
+      commitSha = ref.object.sha;
+      return gh('GET',repoPath('/contents/beats.json?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json');
+    }).then(function(cur){
+      if(cur !== S.originalText) throw new Error('beats.json changed on GitHub since you opened this page. Reload the page and make your changes again so nothing is overwritten.');
+      return gh('GET',repoPath('/git/commits/'+commitSha));
+    }).then(function(c){
+      baseTree = c.tree.sha;
+      var titles = Object.keys(S.files), chain = Promise.resolve();
+      titles.forEach(function(t,i){
+        chain = chain.then(function(){
+          st('Uploading preview '+(i+1)+' of '+titles.length+'…');
+          return toB64(S.files[t]).then(function(b64){ return gh('POST',repoPath('/git/blobs'),{content:b64,encoding:'base64'}); })
+            .then(function(b){ treeItems.push({path:'audio/'+slug(t)+'.mp3',mode:'100644',type:'blob',sha:b.sha}); });
+        });
+      });
+      return chain;
+    }).then(function(){
+      st('Saving the beat list…');
+      return gh('POST',repoPath('/git/blobs'),{content:jsonText(final),encoding:'utf-8'});
+    }).then(function(b){
+      treeItems.push({path:'beats.json',mode:'100644',type:'blob',sha:b.sha});
+      removedTitles.forEach(function(t){
+        var s = slug(t), names = [s+'.mp3']; if(OLD_SLUGS[t]) names.push(OLD_SLUGS[t]+'.mp3');
+        names.forEach(function(n){
+          var real = S.audio[n] ? n : S.audioLower[n.toLowerCase()];
+          if(real && !S.files[t]) treeItems.push({path:'audio/'+real,mode:'100644',type:'blob',sha:null});
+        });
+      });
+      return gh('POST',repoPath('/git/trees'),{base_tree:baseTree,tree:treeItems});
+    }).then(function(tr){
+      var added = final.filter(function(t){ return S.original.indexOf(t)<0; }).length;
+      var m = 'Admin: '+(added?added+' added':'')+(added&&removedTitles.length?', ':'')+(removedTitles.length?removedTitles.length+' removed':'')+(!added&&!removedTitles.length?'update list':'');
+      st('Publishing…');
+      return gh('POST',repoPath('/git/commits'),{message:m,tree:tr.sha,parents:[commitSha]});
+    }).then(function(c){
+      return gh('PATCH',repoPath('/git/refs/heads/'+encodeURIComponent(S.branch)).replace('%2F','/'),{sha:c.sha});
+    }).then(function(){
+      btn.disabled = false; $('#discard').disabled = false;
+      return load().then(function(){ say($('#addMsg'),'Published. Your site will update in about a minute (refresh the store page after that).','ok'); window.scrollTo({top:0,behavior:'smooth'}); });
+    }).catch(function(e){
+      btn.disabled = false; $('#discard').disabled = false; updateBar();
+      alert('Could not publish: '+(e && e.message || e)+'\n\nNothing was changed on your site.');
+    });
+  }
+
+  /* ---- wiring ---- */
+  $('#connect').onclick = function(){
+    S.repo = $('#repo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/\/+$/,'');
+    S.branch = $('#branch').value.trim() || 'main'; S.token = $('#token').value.trim();
+    if(!/^[\w.-]+\/[\w.-]+$/.test(S.repo)){ say($('#loginMsg'),'Enter the repository as owner/name, for example yourname/your-site.','err'); return; }
+    if(!S.token){ say($('#loginMsg'),'Paste your access token.','err'); return; }
+    load().then(function(){
+      if($('#remember').checked) lsSet('ap_admin',JSON.stringify({repo:S.repo,branch:S.branch,token:S.token})); else lsDel('ap_admin');
+    }).catch(function(e){ say($('#loginMsg'),e.message,'err'); });
+  };
+  $('#signout').onclick = function(){
+    if(Object.keys(S.files).length || changeCount().removed){ if(!confirm('You have unpublished changes. Sign out anyway?')) return; }
+    lsDel('ap_admin'); location.reload();
+  };
+  $('#drop').onclick = function(){ $('#files').click(); };
+  $('#drop').onkeydown = function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); $('#files').click(); } };
+  $('#files').onchange = function(){ addFiles(this.files); this.value = ''; };
+  ['dragenter','dragover'].forEach(function(ev){ $('#drop').addEventListener(ev,function(e){ e.preventDefault(); this.classList.add('over'); }); });
+  ['dragleave','drop'].forEach(function(ev){ $('#drop').addEventListener(ev,function(e){ e.preventDefault(); this.classList.remove('over'); }); });
+  $('#drop').addEventListener('drop',function(e){ addFiles(e.dataTransfer.files); });
+  $('#addBtn').onclick = commitQueue;
+  $('#filter').oninput = render;
+  $('#publish').onclick = publish;
+  $('#discard').onclick = function(){ S.list = S.original.slice(); S.files = {}; S.removed = {}; render(); say($('#addMsg'),''); };
+  window.addEventListener('beforeunload',function(e){ if(!$('#bar').classList.contains('hidden')){ e.preventDefault(); e.returnValue = ''; } });
+
+  try{
+    var saved = JSON.parse(lsGet('ap_admin')||'null');
+    if(saved && saved.repo && saved.token){
+      $('#repo').value = saved.repo; $('#branch').value = saved.branch||'main'; $('#token').value = saved.token;
+      $('#connect').click();
+    }
+  }catch(_){}
+})();
+</script>
+</body>
+</html>
