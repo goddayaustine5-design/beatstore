@@ -470,9 +470,10 @@ function startStore(REMOTE){
     if(b.len) meta.push('<span>'+b.len+'</span>');
     if(b.date) meta.push('<span>Added '+fmtDate(b.date)+'</span>');
     var live = !!(b.s || b.src);
-    if(!live) meta.push('<span>Preview coming soon</span>');
+    var wait = !live && !b.missing;   // still checking whether the preview file exists
+    if(!live) meta.push('<span>'+(wait?'Loading…':'Preview coming soon')+'</span>');
     return '<article class="beat" id="beat-'+b.slug+'" data-id="'+b.id+'" style="--h:'+b.h+'">'+
-      '<button class="play"'+(live?'':' disabled')+' type="button" aria-label="'+(live?'Play preview of ':'Preview coming soon for ')+b.t+'">'+ICON_PLAY+'</button>'+
+      '<button class="play"'+(live?'':' disabled')+' type="button" aria-label="'+(live?'Play preview of ':wait?'Loading preview for ':'Preview coming soon for ')+b.t+'">'+ICON_PLAY+'</button>'+
       '<div class="info"><h4><a href="#beat-'+b.slug+'">'+b.t+'</a></h4><p class="meta">'+meta.join('')+'</p></div>'+
       '<div class="fmts" role="group" aria-label="File format for '+b.t+'">'+chips+'</div>'+
       '<div class="buy"><button class="share" type="button" aria-label="Copy link to '+b.t+'" title="Copy link">'+ICON_SHARE+'<span class="st">Share</span></button><span class="price">'+money(PRICES[sel[b.id]])+'</span><button class="btn btn-primary buy-btn" type="button">Buy</button></div>'+
@@ -887,12 +888,20 @@ function startStore(REMOTE){
     var probe = new Audio();
     probe.preload = 'metadata';
     var tryOld = false;
+    function giveUp(){
+      if(b.src || b.missing) return;
+      b.missing = true;
+      clearTimeout(rerender);
+      rerender = setTimeout(function(){ renderStore(); goToHash(); },120);
+    }
     probe.addEventListener('error',function(){
       if(!tryOld && b.old){ tryOld = true; probe.src = AUDIO_DIR+b.old+'.mp3'; }
+      else giveUp();
     });
+    setTimeout(giveUp,12000);
     probe.addEventListener('loadedmetadata',function(){
       if(!isFinite(probe.duration) || probe.duration <= 0) return;
-      b.src = tryOld ? AUDIO_DIR+b.old+'.mp3' : AUDIO_DIR+b.slug+'.mp3';
+      b.src = tryOld ? AUDIO_DIR+b.old+'.mp3' : AUDIO_DIR+b.slug+'.mp3'; b.missing = false;
       if(!b.len) b.len = fmtLen(probe.duration);
       clearTimeout(rerender);
       rerender = setTimeout(function(){ renderStore(); goToHash(); },120);
