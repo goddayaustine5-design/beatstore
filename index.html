@@ -163,6 +163,14 @@ section{padding-block:56px 0}
 .pack .row{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:6px}
 .pack .btn{padding:9px 16px;font-size:.9rem}
 .licence-note{color:var(--muted);margin:0}
+.btn small{display:block;font-weight:500;font-size:.72rem;letter-spacing:.02em;opacity:.8;text-transform:none;margin-top:2px}
+#flwBtn{width:100%;margin-bottom:0}
+.or{display:flex;align-items:center;gap:12px;margin:10px 0;color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.1em}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.paidbox{border:1px solid #1f5a41;background:rgba(62,207,142,.07);border-radius:12px;padding:16px;display:grid;gap:10px}
+.paidbox h4{margin:0;font-size:1.05rem;color:var(--ok)}
+.paidbox p{margin:0;color:var(--muted);font-size:.92rem;word-break:break-word}
+.paidbox b{color:var(--fg)}
 .searchrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px}
 .searchrow .searchbar{margin:0;flex:1 1 280px;max-width:460px}
 .favchip{display:inline-flex;align-items:center;gap:8px;height:46px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;font-size:.92rem;cursor:pointer}
@@ -416,8 +424,10 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     </div>
     <div class="total"><span>Total</span><span id="total">&#8358;0</span></div>
     <p class="note" id="rateNote" hidden></p>
-    <label class="sr" for="payEmail">Email (optional)</label>
+    <label class="sr" for="payEmail">Email</label>
     <input id="payEmail" type="email" placeholder="Email (optional)" autocomplete="email">
+    <button class="btn btn-primary" id="flwBtn" type="button" hidden disabled>PAY NOW <small>card, bank transfer or USSD</small></button>
+    <p class="or" id="flwOr" hidden><span>or</span></p>
     <button class="btn btn-primary" id="payBtn" type="submit" disabled>CHECKOUT VIA WHATSAPP</button>
     <p class="note" id="payNote">Your order opens in WhatsApp for you to send. Payment is arranged and confirmed in the chat, and your files are sent once it is confirmed.</p>
   </form>
@@ -456,6 +466,10 @@ function startStore(REMOTE){
   /* ---------- WhatsApp checkout settings ---------- */
   // The WhatsApp number now lives in config.js (the one place to change it, shared with the Contact page).
   // If config.js is missing or the number is not valid, checkout shows an error instead of opening WhatsApp.
+  // Online payment is only switched on when a Flutterwave PUBLIC key is set in config.js. A secret key is refused.
+  var FLW_KEY = String((window.SITE_CONFIG || {}).flutterwavePublicKey || '').trim();
+  if(/^FLWSECK/i.test(FLW_KEY)){ console.error('config.js contains a Flutterwave SECRET key. It was ignored. Remove it and use the public key (FLWPUBK...).'); FLW_KEY = ''; }
+  var FLW_ON = /^FLWPUBK/.test(FLW_KEY), FLW_TEST = /TEST/.test(FLW_KEY);
   const WHATSAPP_BUSINESS_NUMBER = String((window.SITE_CONFIG || {}).whatsappNumber || "");
   // Longest WhatsApp link we will open. Longer orders are sent in a compact layout, then refused with a message.
   const MAX_WHATSAPP_URL_LENGTH = 3000;
@@ -686,6 +700,18 @@ function startStore(REMOTE){
     var n = cart.size, nEl = $('#cartN');
     nEl.textContent = n; nEl.setAttribute('data-zero', n===0);
     var body = $('#cartBody'), form = $('#payForm');
+    var pd = getPaid();
+    if(pd && !n){
+      form.hidden = true;
+      body.innerHTML = '<div class="paidbox"><h4>Payment received ✓</h4>'+
+        '<p>Reference: <b>'+esc(pd.ref)+'</b></p><p>Amount paid: <b>'+esc(pd.shown)+'</b></p>'+
+        '<p>One more step: send your order details on WhatsApp so we can confirm the payment and deliver your files.</p>'+
+        '<a class="btn btn-primary" href="'+esc(pd.url)+'" target="_blank" rel="noopener noreferrer">SEND ORDER ON WHATSAPP</a>'+
+        '<button class="btn btn-ghost" id="newOrder" type="button">Start a new order</button></div>';
+      $('#total').textContent = money(0);
+      saveCart();
+      return;
+    }
     form.hidden = false;
     if(!n){
       body.innerHTML = '<p class="d-empty">Your cart is empty.<br>Pick a license on any beat and press Buy.</p>';
@@ -701,7 +727,10 @@ function startStore(REMOTE){
     }
     $('#total').textContent = money(total());
     $('#payBtn').disabled = !n || waBusy;
-    $('#payBtn').textContent = 'CHECKOUT VIA WHATSAPP';
+    $('#payBtn').textContent = FLW_ON ? 'ORDER ON WHATSAPP' : 'CHECKOUT VIA WHATSAPP';
+    $('#payBtn').classList.toggle('btn-ghost',FLW_ON); $('#payBtn').classList.toggle('btn-primary',!FLW_ON);
+    $('#flwBtn').hidden = !FLW_ON; $('#flwOr').hidden = !FLW_ON;
+    $('#flwBtn').disabled = !n || flwBusy;
     saveCart();
   }
   $('#cartBody').addEventListener('click',function(e){
@@ -745,9 +774,11 @@ function startStore(REMOTE){
       return 'The order total could not be verified. Please close and reopen the cart, then try again.';
     return '';
   }
-  function buildMessage(c,email,ref,compact){
-    var L = ['Hello Austino Pro! 👋','',"I'd like to purchase the following beats from your store.",'','🎵 MY BEAT ORDER','Order Ref: '+ref,''], n = 0;
-    cart.forEach(function(i){
+  function buildMessage(c,email,ref,compact,pay,items){
+    items = items || cart;
+    var L = ['Hello Austino Pro! 👋','',pay ? "I've paid online for the following beats from your store." : "I'd like to purchase the following beats from your store.",'','🎵 MY BEAT ORDER','Order Ref: '+ref,''], n = 0;
+    if(pay) L.push('✅ PAID ONLINE (Flutterwave)','Payment Ref: '+pay.ref,'Flutterwave ID: '+pay.id,'Amount paid: '+pay.shown,'');
+    items.forEach(function(i){
       n++;
       if(compact) L.push(n+'. '+i.title+' — '+i.ln+' — '+NGN.format(i.price));
       else L.push(n+'. '+i.title,'Licence: '+i.ln,'Price: '+NGN.format(i.price),'');
@@ -758,10 +789,80 @@ function startStore(REMOTE){
     L.push('💰 TOTAL: '+NGN.format(c.total),'');
     if(curCode !== 'NGN' && RATES[curCode]) L.push('(Shown on the website as about '+money(c.total)+'. Please confirm in naira.)','');
     if(email) L.push('Customer Email: '+email,'');
-    L.push('Please confirm my order and provide the payment instructions.','','Thank you!','','Store: '+SITE_URL);
+    L.push(pay ? 'Please confirm my payment and send my files.' : 'Please confirm my order and provide the payment instructions.','','Thank you!','','Store: '+SITE_URL);
     return L.join('\n');
   }
   function waUrl(msg){ return 'https://wa.me/'+WHATSAPP_BUSINESS_NUMBER+'?text='+encodeURIComponent(msg); }
+  /* ---------- Flutterwave online payment ---------- */
+  // The checkout pop-up runs in the visitor's browser with your PUBLIC key. The page cannot prove a payment happened,
+  // so ALWAYS check the reference, amount and currency in your Flutterwave dashboard before sending any files.
+  var flwBusy = false, PAID_KEY = 'ap_paid';
+  function esc(t){ return String(t).replace(/[&<>"']/g,function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
+  function getPaid(){ try{ var o = JSON.parse(sessionStorage.getItem(PAID_KEY)||'null'); return o && o.ref && o.url ? o : null; }catch(_){ return null; } }
+  function setPaid(o){ try{ if(o) sessionStorage.setItem(PAID_KEY,JSON.stringify(o)); else sessionStorage.removeItem(PAID_KEY); }catch(_){} }
+  function loadFlw(){
+    if(!FLW_ON || window.FlutterwaveCheckout || document.getElementById('flwScript')) return;
+    var sc = document.createElement('script'); sc.id = 'flwScript'; sc.src = 'https://checkout.flutterwave.com/v3.js'; sc.async = true;
+    sc.onerror = function(){ sc.remove(); };
+    document.head.appendChild(sc);
+  }
+  function txRef(){
+    var A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = '';
+    for(var k=0;k<4;k++) r += A.charAt(Math.floor(Math.random()*A.length));
+    return 'AP-'+Date.now().toString(36).toUpperCase()+'-'+r;
+  }
+  function startFlw(){
+    if(flwBusy || !FLW_ON) return;
+    var c = calc(), err = cartProblem(c);
+    if(err) return showNote(err,true);
+    var email = $('#payEmail').value.trim();
+    if(!EMAIL_RE.test(email)){ showNote('Enter your email address above to pay online. Your receipt is sent there.',true); $('#payEmail').focus(); return; }
+    if(!window.FlutterwaveCheckout){ loadFlw(); return showNote('Online payment is still loading or could not load. Try again in a moment, or order on WhatsApp instead.',true); }
+    var cur = (curCode !== 'NGN' && RATES[curCode]) ? curCode : 'NGN';
+    var amount = cur === 'NGN' ? c.total : Math.round(c.total * RATES[cur] * 100) / 100;
+    if(!(amount > 0)) return showNote('The order total could not be verified. Please close and reopen the cart, then try again.',true);
+    var ref = txRef(), snap = new Map(cart), list = [];
+    snap.forEach(function(i){ list.push(i.title+' ('+i.ln+')'); });
+    var shown = money(c.total);
+    flwBusy = true; renderCart(); resetNote();
+    var done = false, modal;
+    try{
+      modal = window.FlutterwaveCheckout({
+        public_key: FLW_KEY, tx_ref: ref, amount: amount, currency: cur,
+        customer: {email: email},
+        meta: {order: list.join('; ').slice(0,240), naira_total: c.total},
+        customizations: {title: 'Austino Pro', description: 'Beat order '+ref},
+        callback: function(res){
+          if(done) return;
+          var st = String((res && res.status) || '').toLowerCase();
+          if(st === 'successful' || st === 'completed'){
+            done = true;
+            var pay = {ref: ref, id: String((res && (res.transaction_id || res.id)) || 'n/a'), shown: shown};
+            var url = waUrl(buildMessage(c,email,ref,false,pay,snap));
+            if(url.length > MAX_WHATSAPP_URL_LENGTH) url = waUrl(buildMessage(c,email,ref,true,pay,snap));
+            setPaid({ref: ref, id: pay.id, shown: shown, url: url});
+            cart.clear(); flwBusy = false; resetNote(); renderCart();
+            try{ if(modal && typeof modal.close === 'function') modal.close(); }catch(_){}
+          } else {
+            flwBusy = false; renderCart();
+            showNote('The payment was not completed. If money left your account, send us this reference on WhatsApp: '+ref,true);
+          }
+        },
+        onclose: function(){ if(!done){ flwBusy = false; renderCart(); } }
+      });
+    }catch(e){ flwBusy = false; renderCart(); showNote('Online payment could not start. Please try again or order on WhatsApp.',true); }
+  }
+  $('#flwBtn').addEventListener('click',startFlw);
+  $('#cartBody').addEventListener('click',function(e){
+    if(e.target.closest('#newOrder')){ setPaid(null); renderCart(); }
+  });
+  if(FLW_ON){
+    loadFlw();
+    $('#payEmail').placeholder = 'Email (needed to pay online)';
+    $('#payNote').textContent = DEFAULT_NOTE = FLW_TEST
+      ? 'TEST MODE: payments made now are not real. Remove the test key in config.js to go live.'
+      : 'Pay now to pay online, then send us your order on WhatsApp so we can deliver your files. Or order on WhatsApp and arrange payment in the chat.';
+  }
   $('#payForm').addEventListener('submit',function(e){
     e.preventDefault();
     if(waBusy) return;

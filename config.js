@@ -5,6 +5,12 @@ window.SITE_CONFIG = {
   // Used by cart checkout and the "Request a custom beat" button.
   whatsappNumber: "2349010216751",
 
+  // ONLINE PAYMENT (Flutterwave "Pay now" button). Leave blank to keep WhatsApp as the only checkout.
+  // Paste your PUBLIC key from the Flutterwave dashboard (Settings, API keys). It starts with FLWPUBK.
+  // Use the TEST public key (FLWPUBK_TEST-...) while testing and the LIVE one when you are ready.
+  // NEVER paste your secret key (it starts with FLWSECK) anywhere on this site.
+  flutterwavePublicKey: "FLWPUBK-1fe10fd6fb5418efcbf460fe40e49475-X",
+
   // CONTACT FORM DELIVERY (set ONE of these; the form shows a "not set up yet" message until you do):
   // 1) Best: a form-service address such as Formspree. Create a free form at formspree.io,
   //    then paste its address here, for example "https://formspree.io/f/abcdwxyz".
