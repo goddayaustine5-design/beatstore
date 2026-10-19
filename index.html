@@ -1223,6 +1223,17 @@ function startStore(REMOTE){
   // for today's rate, keeps it for 6 hours, and converts on screen. WhatsApp orders are always confirmed in naira.
   var RATE_KEY = 'ap_rates_v1', CUR_KEY = 'ap_currency';
   var FRESH_MS = 6*3600*1000, STALE_MS = 7*24*3600*1000;
+  // First-visit currency guess from the browser's own settings (time zone and language). Nothing is sent anywhere.
+  // Nigeria (or unknown) = naira, everyone else = dollars. A visitor's own choice in the dropdown always wins and is remembered.
+  var autoCur = false;
+  function likelyNigeria(){
+    try{
+      var tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+      var langs = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language || ''];
+      if(tz === 'Africa/Lagos' || langs.some(function(l){ return /-NG$/i.test(l); })) return true;
+      return !tz;   // no time zone available (privacy settings): keep naira
+    }catch(_){ return true; }
+  }
   function lsGet(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }
   function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }
   function cachedRates(maxAge){
@@ -1247,6 +1258,7 @@ function startStore(REMOTE){
     var d = new Date(t); rateDate = d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
     var want = lsGet(CUR_KEY);
     if(want && RATES[want]) curCode = want;
+    else if(!want && !likelyNigeria() && RATES.USD){ curCode = 'USD'; autoCur = true; }   // first visit from outside Nigeria: show dollars
     buildCurrencySelects(); applyCurrency();
   }
   function loadRates(){
@@ -1274,7 +1286,7 @@ function startStore(REMOTE){
     var unit = {USD:'$1',GBP:'£1',EUR:'€1'}[curCode], hint = $('#rateHint'), note = $('#rateNote'), legal = $('#legalCur');
     if(curCode !== 'NGN' && RATES[curCode]){
       var per = Math.round(1/RATES[curCode]).toLocaleString('en-NG');
-      hint.textContent = '≈ ₦'+per+' per '+unit+(rateDate?' · '+rateDate:'');
+      hint.textContent = '≈ ₦'+per+' per '+unit+(rateDate?' · '+rateDate:'')+(autoCur?' · picked for your region':'');
       note.hidden = false;
       note.textContent = 'Converted from naira at about ₦'+per+' per '+unit+(rateDate?' ('+rateDate+')':'')+'. Orders are confirmed in naira, so the final amount may differ slightly.';
       legal.textContent = 'Prices shown in '+CURRENCIES.filter(function(x){return x.c===curCode;})[0].w+', converted from naira';
@@ -1290,7 +1302,7 @@ function startStore(REMOTE){
   }
   function setCurrency(code){
     if(!(code === 'NGN' || RATES[code])) return;
-    curCode = code; lsSet(CUR_KEY,code); applyCurrency();
+    curCode = code; autoCur = false; lsSet(CUR_KEY,code); applyCurrency();
   }
   $('#cur').addEventListener('change',function(){ setCurrency(this.value); });
   $('#curCart').addEventListener('change',function(){ setCurrency(this.value); });

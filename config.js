@@ -15,7 +15,7 @@ window.SITE_CONFIG = {
   // 1) Best: a form-service address such as Formspree. Create a free form at formspree.io,
   //    then paste its address here, for example "https://formspree.io/f/abcdwxyz".
   //    Messages are then emailed to you directly and the visitor never leaves your site.
-  contactFormEndpoint: "",
+  contactFormEndpoint: "https://formspree.io/f/meaeddpp",
   // 2) Simple fallback: your email address. The visitor's email app opens with the message ready to send.
   contactEmail: ""
 };
