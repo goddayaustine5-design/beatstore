@@ -271,6 +271,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
 .d-foot .btn{width:100%;white-space:normal;text-align:center;line-height:1.25;letter-spacing:.02em}
 .d-foot .btn[disabled]{opacity:.4;cursor:not-allowed}
 .note{font-size:.8rem;color:var(--muted)}
+.note:empty{display:none}
 .done{padding:28px 0;display:grid;gap:12px}
 .done h4{font:800 1.8rem/1 var(--f-display);text-transform:uppercase;color:var(--ok)}
 
@@ -419,18 +420,13 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   <div class="d-body" id="cartBody"></div>
   <form class="d-foot" id="payForm" novalidate>
     <button class="btn btn-ghost" id="contShop" type="button">&larr; Continue shopping</button>
-    <div class="curpick curpick-cart">
-      <label for="curCart">Currency</label>
-      <select id="curCart" class="cursel"><option value="NGN">Naira (₦)</option></select>
-    </div>
     <div class="total"><span>Total</span><span id="total">&#8358;0</span></div>
     <p class="note" id="rateNote" hidden></p>
     <label class="sr" for="payEmail">Email</label>
     <input id="payEmail" type="email" placeholder="Email (optional)" autocomplete="email">
     <button class="btn btn-primary" id="flwBtn" type="button" hidden disabled>PAY NOW <small>card, bank transfer or USSD</small></button>
-    <p class="or" id="flwOr" hidden><span>or</span></p>
     <button class="btn btn-primary" id="payBtn" type="submit" disabled>CHECKOUT VIA WHATSAPP</button>
-    <p class="note" id="payNote">Your order opens in WhatsApp for you to send. Payment is arranged and confirmed in the chat, and your files are sent once it is confirmed.</p>
+    <p class="note" id="payNote"></p>
   </form>
 </aside>
 
@@ -730,7 +726,7 @@ function startStore(REMOTE){
     $('#payBtn').disabled = !n || waBusy;
     $('#payBtn').textContent = FLW_ON ? 'ORDER ON WHATSAPP' : 'CHECKOUT VIA WHATSAPP';
     $('#payBtn').classList.toggle('btn-ghost',FLW_ON); $('#payBtn').classList.toggle('btn-primary',!FLW_ON);
-    $('#flwBtn').hidden = !FLW_ON; $('#flwOr').hidden = !FLW_ON;
+    $('#flwBtn').hidden = !FLW_ON;
     $('#flwBtn').disabled = !n || flwBusy;
     saveCart();
   }
@@ -862,7 +858,7 @@ function startStore(REMOTE){
     $('#payEmail').placeholder = 'Email (needed to pay online)';
     $('#payNote').textContent = DEFAULT_NOTE = FLW_TEST
       ? 'TEST MODE: payments made now are not real. Remove the test key in config.js to go live.'
-      : 'Pay now to pay online, then send us your order on WhatsApp so we can deliver your files. Or order on WhatsApp and arrange payment in the chat.';
+      : '';
   }
   $('#payForm').addEventListener('submit',function(e){
     e.preventDefault();
@@ -1286,10 +1282,10 @@ function startStore(REMOTE){
       var ok = x.c === 'NGN' || !!RATES[x.c];
       return '<option value="'+x.c+'"'+(x.c===curCode?' selected':'')+(ok?'':' disabled')+'>'+x.n+(ok?'':' (unavailable)')+'</option>';
     }).join('');
-    $('#cur').innerHTML = html; $('#curCart').innerHTML = html;
+    $('#cur').innerHTML = html;
   }
   function applyCurrency(){
-    $('#cur').value = curCode; $('#curCart').value = curCode;
+    $('#cur').value = curCode;
     var unit = {USD:'$1',GBP:'£1',EUR:'€1'}[curCode], hint = $('#rateHint'), note = $('#rateNote'), legal = $('#legalCur');
     if(curCode !== 'NGN' && RATES[curCode]){
       var per = Math.round(1/RATES[curCode]).toLocaleString('en-NG');
@@ -1312,7 +1308,6 @@ function startStore(REMOTE){
     curCode = code; autoCur = false; lsSet(CUR_KEY,code); applyCurrency();
   }
   $('#cur').addEventListener('change',function(){ setCurrency(this.value); });
-  $('#curCart').addEventListener('change',function(){ setCurrency(this.value); });
 
   restoreCart();
   renderChips(); renderStore(); renderCart();
