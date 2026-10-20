@@ -418,6 +418,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   <div class="d-head"><h3>Your Cart</h3><button class="x" id="closeCart" aria-label="Close cart">&times;</button></div>
   <div class="d-body" id="cartBody"></div>
   <form class="d-foot" id="payForm" novalidate>
+    <button class="btn btn-ghost" id="contShop" type="button">&larr; Continue shopping</button>
     <div class="curpick curpick-cart">
       <label for="curCart">Currency</label>
       <select id="curCart" class="cursel"><option value="NGN">Naira (₦)</option></select>
@@ -893,7 +894,13 @@ function startStore(REMOTE){
   }
   $('#openCart').addEventListener('click',openCart);
   $('#closeCart').addEventListener('click',closeCart);
-  $('#scrim').addEventListener('click',closeCart);
+  // Continue shopping: close the cart and jump back to the beat list so more beats can be added.
+  $('#contShop').addEventListener('click',function(){
+    closeCart();
+    var list = document.getElementById('beats');
+    if(list) setTimeout(function(){ list.scrollIntoView({behavior:'smooth',block:'start'}); },50);
+  });
+    $('#scrim').addEventListener('click',closeCart);
   document.addEventListener('keydown',function(e){ if(e.key==='Escape' && $('#drawer').classList.contains('open')) closeCart(); });
 
   /* ---------- nav + newsletter ---------- */
