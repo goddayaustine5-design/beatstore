@@ -1,11 +1,15 @@
 {
   "currency": "USD",
+  "live": false,
   "rate": 1335,
   "prices": [
     25,
     60,
-    150,
-    250
+    120
   ],
+  "offer": {
+    "min": 400,
+    "max": 2000
+  },
   "beats": {}
 }
