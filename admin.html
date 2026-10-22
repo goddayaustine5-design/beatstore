@@ -46,12 +46,22 @@ button.danger{color:var(--bad)}
 .bar .in{max-width:900px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .steps li{margin:6px 0;color:var(--muted)}
 details summary{cursor:pointer;color:var(--muted)}
+select{font:inherit;background:#0f1116;color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.pr{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:6px}
+.pr label{margin:0 0 4px}
+.pr .eq{font-size:.78rem;color:var(--muted);margin-top:4px;min-height:1.1em}
+input.bad{border-color:var(--bad)!important}
+.ed{grid-column:1/-1;background:#0f1116;border-top:1px dashed var(--line);padding:10px 12px}
+.b.has-ed{border-bottom:0}
+.edwrap{border-bottom:1px solid var(--line)}
+.edwrap:last-child{border-bottom:0}
+.tag.cp{color:#ffd58a;border-color:#6b5320}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Beat admin</h1>
-  <p class="sub">Add, reorder and remove beats without touching GitHub. Changes go live about a minute after you publish.</p>
+  <p class="sub">Add, reorder and remove beats, and set their prices, without touching GitHub. Changes go live about a minute after you publish.</p>
 
   <section id="login" class="card">
     <h2>Connect to GitHub</h2>
@@ -97,6 +107,27 @@ details summary{cursor:pointer;color:var(--muted)}
       <div id="addMsg" class="msg"></div>
     </section>
 
+    <section class="card" id="priceCard">
+      <h2>Prices</h2>
+      <div class="row">
+        <label for="prCur" style="margin:0">I set my prices in</label>
+        <select id="prCur"><option value="NGN">Naira (₦)</option><option value="USD">US Dollar ($)</option><option value="GBP">British Pound (£)</option><option value="EUR">Euro (€)</option></select>
+      </div>
+      <div id="prRateBox" class="hidden" style="margin-top:12px">
+        <label for="prRate" style="margin-top:0">Naira per <span id="prUnit">$1</span> (the rate used to work out naira prices)</label>
+        <input id="prRate" type="text" inputmode="decimal" autocomplete="off" style="max-width:200px">
+        <div class="hint" id="prRateHint" style="margin-top:4px"></div>
+      </div>
+      <label style="margin-top:16px">Price for all beats</label>
+      <div class="pr" id="prTiers"></div>
+      <div class="row" style="margin-top:14px">
+        <button id="prClear" class="small" type="button">Clear all individual prices</button>
+        <span class="hint" id="prCustomN"></span>
+      </div>
+      <p class="hint" style="margin:10px 0 0">These prices apply to every beat. To give one beat its own price, use the Price button on that beat below. Nothing goes live until you press Publish changes.</p>
+      <div id="prMsg" class="msg"></div>
+    </section>
+
     <section class="card">
       <h2>Your beats <span class="hint" id="count"></span></h2>
       <input id="filter" type="search" placeholder="Search your beats…" autocomplete="off">
@@ -125,7 +156,7 @@ details summary{cursor:pointer;color:var(--muted)}
   function lsDel(k){ try{ localStorage.removeItem(k); }catch(_){} }
   function say(el,text,cls){ el.textContent = text||''; el.className = 'msg'+(cls?' '+cls:''); }
 
-  var S = { repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
+  var S = { pr:null, prBase:'', prText:null, prOpen:{}, repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
   // S.list = working order of titles. S.files[title] = File for new/replaced previews. S.removed[title] = true.
 
   function gh(method,path,body,accept){
@@ -143,6 +174,145 @@ details summary{cursor:pointer;color:var(--muted)}
     });
   }
   function repoPath(p){ return '/repos/'+S.repo+p; }
+
+  /* ---- prices ---- */
+  var TIERS = ['MP3','WAV','Unlimited','Exclusive'];
+  var DEF_PRICES = [30000,80000,160000,250000];
+  var SYM = {NGN:'₦',USD:'$',GBP:'£',EUR:'€'};
+  var CUR_NAME = {NGN:'naira',USD:'US dollars',GBP:'British pounds',EUR:'euros'};
+  S.prBad = {};
+  function defaultPr(){ return {cur:'NGN',rate:1,tiers:DEF_PRICES.slice(),beats:{}}; }
+  function parseMoney(str,cur){
+    str = String(str).replace(/[,\s]/g,'');
+    if(!/^\d+(\.\d{1,2})?$/.test(str)) return NaN;
+    var v = parseFloat(str); if(cur==='NGN' && v%1) return NaN;
+    return v>0 && v<=1e9 ? v : NaN;
+  }
+  function fmt(v,cur){ return v==null ? '' : (cur==='NGN' ? Math.round(v).toLocaleString('en-NG') : v.toLocaleString('en-US',{minimumFractionDigits:v%1?2:0,maximumFractionDigits:2})); }
+  function prFromJSON(d){
+    var o = defaultPr(); if(!d || typeof d!=='object') return o;
+    var cur = ['NGN','USD','GBP','EUR'].indexOf(d.currency)>=0 ? d.currency : null; if(!cur) return o;
+    var rate = cur==='NGN' ? 1 : +d.rate; if(!(rate>0)) return o;
+    if(!Array.isArray(d.prices) || d.prices.length!==4 || !d.prices.every(function(v){ return typeof v==='number' && v>0; })) return o;
+    o.cur = cur; o.rate = rate; o.tiers = d.prices.slice();
+    if(d.beats && typeof d.beats==='object') Object.keys(d.beats).forEach(function(k){
+      var m = {}, src = d.beats[k]; if(!src || typeof src!=='object') return;
+      for(var j=0;j<4;j++) if(typeof src[j]==='number' && src[j]>0) m[j] = src[j];
+      if(Object.keys(m).length) o.beats[k] = m;
+    });
+    return o;
+  }
+  function liveSlugs(){ return S.list.filter(function(t){ return !S.removed[t]; }).map(slug); }
+  function prJSON(live){
+    var pr = S.pr, out = {currency:pr.cur};
+    if(pr.cur!=='NGN') out.rate = pr.rate;
+    out.prices = pr.tiers.slice(); out.beats = {};
+    Object.keys(pr.beats).sort().forEach(function(k){
+      if(live && live.indexOf(k)<0) return;
+      var m = pr.beats[k], r = {}; for(var j=0;j<4;j++) if(m[j]!=null) r[j] = m[j];
+      if(Object.keys(r).length) out.beats[k] = r;
+    });
+    return JSON.stringify(out,null,2)+'\n';
+  }
+  function priceChanged(){ return !!S.pr && prJSON(liveSlugs()) !== S.prBase; }
+  function prProblem(){
+    var pr = S.pr;
+    if(!pr.tiers.every(function(v){ return v>0; })) return 'One of the prices for all beats is empty or not a valid number.';
+    if(pr.cur!=='NGN' && !(pr.rate>0)) return 'Enter the naira rate for '+SYM[pr.cur]+'1.';
+    if(Object.keys(S.prBad).length) return 'One of the individual beat prices is not a valid number. Fix the red box.';
+    return '';
+  }
+  function fetchRate(code){
+    var lc = code.toLowerCase();
+    function a(){ return fetch('https://open.er-api.com/v6/latest/NGN',{cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){ var v = d && d.rates && d.rates[code]; if(!(v>0)) throw 0; return Math.round(1/v); }); }
+    function b(){ return fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/ngn.json',{cache:'no-store'}).then(function(r){ return r.json(); }).then(function(d){ var v = d && d.ngn && d.ngn[lc]; if(!(v>0)) throw 0; return Math.round(1/v); }); }
+    return a().catch(b);
+  }
+  function customCount(){ var live = liveSlugs(); return Object.keys(S.pr.beats).filter(function(k){ return live.indexOf(k)>=0 && Object.keys(S.pr.beats[k]).length; }).length; }
+  function updateEq(){
+    var pr = S.pr;
+    document.querySelectorAll('#prTiers .eq').forEach(function(e,k){
+      e.textContent = pr.cur!=='NGN' && pr.tiers[k]>0 && pr.rate>0 ? '≈ ₦'+Math.round(pr.tiers[k]*pr.rate).toLocaleString('en-NG')+' in naira' : '';
+    });
+    var n = customCount();
+    $('#prCustomN').textContent = n ? n+' beat'+(n>1?'s have':' has')+' their own price' : '';
+    $('#prClear').disabled = !n;
+  }
+  function renderPrices(){
+    var pr = S.pr;
+    $('#prCur').value = pr.cur;
+    $('#prRateBox').classList.toggle('hidden',pr.cur==='NGN');
+    $('#prUnit').textContent = SYM[pr.cur]+'1';
+    $('#prRate').value = pr.cur==='NGN' ? '' : fmt(pr.rate,'USD'); $('#prRate').classList.remove('bad');
+    var box = $('#prTiers'); box.textContent = '';
+    TIERS.forEach(function(name,k){
+      var w = document.createElement('div'), l = document.createElement('label'), i = document.createElement('input'), e = document.createElement('div');
+      l.textContent = name+' ('+SYM[pr.cur]+')'; i.type = 'text'; i.setAttribute('inputmode','decimal'); i.autocomplete = 'off'; i.value = fmt(pr.tiers[k],pr.cur); i.setAttribute('aria-label',name+' price');
+      e.className = 'eq';
+      i.oninput = function(){
+        var v = parseMoney(i.value,S.pr.cur); S.pr.tiers[k] = isNaN(v) ? null : v; i.classList.toggle('bad',isNaN(v));
+        updateEq(); updateBar();
+      };
+      w.appendChild(l); w.appendChild(i); w.appendChild(e); box.appendChild(w);
+    });
+    $('#prRateHint').textContent = '';
+    if(pr.cur!=='NGN') fetchRate(pr.cur).then(function(r){ if(S.pr.cur===pr.cur) $('#prRateHint').textContent = 'For reference, today\'s market rate is about ₦'+r.toLocaleString('en-NG')+'. Use any rate you like (for example a round number).'; }).catch(function(){});
+    updateEq();
+  }
+  function convertTo(to,newRate){
+    var old = S.pr;
+    function f(v){ if(v==null) return v; var n = v*old.rate/newRate; return to==='NGN' ? Math.round(n) : Math.round(n*100)/100; }
+    var nb = {}; Object.keys(old.beats).forEach(function(k){ var m = {}; for(var j=0;j<4;j++) if(old.beats[k][j]!=null) m[j] = f(old.beats[k][j]); nb[k] = m; });
+    S.pr = {cur:to,rate:newRate,tiers:old.tiers.map(f),beats:nb}; S.prBad = {};
+    renderPrices(); render();
+    say($('#prMsg'),'Your prices were converted to '+CUR_NAME[to]+'. Check them and change anything you like.','ok');
+  }
+  function onCurrency(){
+    var sel = $('#prCur'), to = sel.value, old = S.pr;
+    if(to===old.cur) return;
+    if(!old.tiers.every(function(v){ return v>0; }) || !(old.rate>0) || Object.keys(S.prBad).length){ sel.value = old.cur; say($('#prMsg'),'Fix the highlighted prices first, then change the currency.','err'); return; }
+    if(to==='NGN') return convertTo('NGN',1);
+    say($('#prMsg'),'Getting today\'s rate…');
+    fetchRate(to).catch(function(){
+      var r = parseMoney(prompt('Could not get today\'s rate. How many naira is '+SYM[to]+'1? (for example 1500)') || '', 'USD');
+      if(!(r>0)) throw 0; return r;
+    }).then(function(r){ convertTo(to,r); }).catch(function(){ sel.value = old.cur; say($('#prMsg'),'Currency not changed.','err'); });
+  }
+  $('#prCur').onchange = onCurrency;
+  $('#prRate').oninput = function(){
+    var v = parseMoney(this.value,'USD'); S.pr.rate = isNaN(v) ? null : v; this.classList.toggle('bad',isNaN(v));
+    updateEq(); updateBar();
+  };
+  $('#prClear').onclick = function(){
+    if(!confirm('Remove the individual prices from all beats, so every beat uses the prices above?')) return;
+    S.pr.beats = {}; S.prBad = {}; say($('#prMsg'),''); render(); updateEq(); updateBar();
+  };
+  function buildEditor(t){
+    var s = slug(t), ed = document.createElement('div'); ed.className = 'ed';
+    Object.keys(S.prBad).forEach(function(k){ if(k.indexOf(s+'|')===0) delete S.prBad[k]; });
+    var grid = document.createElement('div'); grid.className = 'pr';
+    TIERS.forEach(function(name,k){
+      var w = document.createElement('div'), l = document.createElement('label'), i = document.createElement('input');
+      l.textContent = name+' ('+SYM[S.pr.cur]+')'; i.type = 'text'; i.setAttribute('inputmode','decimal'); i.autocomplete = 'off';
+      i.placeholder = S.pr.tiers[k]>0 ? 'Standard '+fmt(S.pr.tiers[k],S.pr.cur) : 'Standard'; i.setAttribute('aria-label',t+' '+name+' price');
+      var cur = S.pr.beats[s] && S.pr.beats[s][k]; i.value = cur ? fmt(cur,S.pr.cur) : '';
+      i.oninput = function(){
+        var raw = i.value.trim(), key = s+'|'+k;
+        if(!raw){ if(S.pr.beats[s]){ delete S.pr.beats[s][k]; if(!Object.keys(S.pr.beats[s]).length) delete S.pr.beats[s]; } delete S.prBad[key]; i.classList.remove('bad'); }
+        else { var v = parseMoney(raw,S.pr.cur);
+          if(isNaN(v)){ S.prBad[key] = 1; i.classList.add('bad'); }
+          else { delete S.prBad[key]; i.classList.remove('bad'); (S.pr.beats[s] = S.pr.beats[s] || {})[k] = v; } }
+        var tag = ed.parentNode && ed.parentNode.querySelector('.cp'); if(tag) tag.classList.toggle('hidden',!(S.pr.beats[s] && Object.keys(S.pr.beats[s]).length));
+        updateEq(); updateBar();
+      };
+      w.appendChild(l); w.appendChild(i); grid.appendChild(w);
+    });
+    var h = document.createElement('div'); h.className = 'hint'; h.style.marginTop = '6px'; h.textContent = 'Leave a box empty to use the price for all beats.';
+    var rs = document.createElement('button'); rs.className = 'small'; rs.style.marginTop = '8px'; rs.textContent = 'Reset to standard prices';
+    rs.onclick = function(){ delete S.pr.beats[s]; Object.keys(S.prBad).forEach(function(k){ if(k.indexOf(s+'|')===0) delete S.prBad[k]; }); render(); updateEq(); updateBar(); };
+    ed.appendChild(grid); ed.appendChild(h); ed.appendChild(rs);
+    return ed;
+  }
 
   function previewState(t){
     var s = slug(t), cands = [s+'.mp3'];
@@ -173,9 +343,17 @@ details summary{cursor:pointer;color:var(--muted)}
       if(!Array.isArray(arr)) throw new Error('beats.json should be a list of titles.');
       S.originalText = text; S.original = arr.map(String); S.list = S.original.slice();
       S.files = {}; S.removed = {}; S.queue = [];
+      return gh('GET',repoPath('/contents/prices.json?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json').catch(function(e){
+        if(e.status===404) return null; throw e;
+      });
+    }).then(function(ptext){
+      var d = null;
+      if(ptext){ try{ d = JSON.parse(ptext); }catch(_){ throw new Error('prices.json could not be read (it is not valid JSON). Delete it on GitHub or fix it, then reload.'); } }
+      S.prText = ptext; S.pr = prFromJSON(d); S.prLoaded = JSON.parse(JSON.stringify(S.pr)); S.prBad = {}; S.prOpen = {};
+      S.prBase = prJSON(liveSlugs());
       $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
       $('#who').textContent = S.repo+' · '+S.branch;
-      say($('#loginMsg'),''); render(); renderQueue();
+      say($('#loginMsg'),''); say($('#prMsg'),''); renderPrices(); render(); renderQueue();
     });
   }
 
@@ -206,19 +384,25 @@ details summary{cursor:pointer;color:var(--muted)}
       tag.textContent = st==='ok' ? 'preview ✓' : st==='case' ? 'file name case' : st==='new' ? (isNew?'new · ':'')+'preview ready' : 'no preview';
       if(st==='case') tag.title = 'The file exists but its name has capital letters. Rename it to '+slug(t)+'.mp3';
       tags.appendChild(tag);
+      var sg = slug(t), cp = document.createElement('span'); cp.className = 'tag cp'+(S.pr.beats[sg] && Object.keys(S.pr.beats[sg]).length ? '' : ' hidden'); cp.textContent = 'own price'; cp.style.marginLeft = '6px'; tags.appendChild(cp);
       var act = document.createElement('span'); act.className = 'row';
       if(!S.removed[t]){
         if(i>0){ var up = document.createElement('button'); up.className = 'small'; up.textContent = 'Top'; up.onclick = function(){ moveTop(t); }; act.appendChild(up); }
+        var pb = document.createElement('button'); pb.className = 'small'; pb.textContent = 'Price'; pb.setAttribute('aria-expanded',!!S.prOpen[t]);
+        pb.onclick = function(){ S.prOpen[t] = !S.prOpen[t]; render(); };
+        act.appendChild(pb);
         var rm = document.createElement('button'); rm.className = 'small danger'; rm.textContent = 'Remove'; rm.onclick = function(){ remove(t); }; act.appendChild(rm);
       } else {
         var un = document.createElement('button'); un.className = 'small'; un.textContent = 'Undo'; un.onclick = function(){ delete S.removed[t]; render(); }; act.appendChild(un);
       }
-      row.appendChild(n); row.appendChild(name); row.appendChild(tags); row.appendChild(act); box.appendChild(row);
+      row.appendChild(n); row.appendChild(name); row.appendChild(tags); row.appendChild(act);
+      if(S.prOpen[t] && !S.removed[t]){ row.classList.add('has-ed'); row.appendChild(buildEditor(t)); }
+      box.appendChild(row);
     });
     if(!shown){ var e = document.createElement('p'); e.className = 'hint'; e.style.padding = '12px'; e.textContent = 'Nothing matches.'; box.appendChild(e); }
     var live = S.list.filter(function(t){ return !S.removed[t]; }).length;
     $('#count').textContent = '· '+live+' beats';
-    updateBar();
+    updateEq(); updateBar();
   }
 
   function updateBar(){
@@ -226,6 +410,7 @@ details summary{cursor:pointer;color:var(--muted)}
     if(c.added) parts.push(c.added+' added');
     if(c.removed) parts.push(c.removed+' removed');
     if(c.moved && !c.added) parts.push('order changed');
+    if(priceChanged()) parts.push('prices changed');
     var replaced = Object.keys(S.files).filter(function(t){ return S.original.indexOf(t)>=0; }).length;
     if(replaced) parts.push(replaced+' preview'+(replaced>1?'s':'')+' replaced');
     $('#bar').classList.toggle('hidden',!parts.length);
@@ -299,6 +484,8 @@ details summary{cursor:pointer;color:var(--muted)}
     var btn = $('#publish'); btn.disabled = true; $('#discard').disabled = true;
     var final = S.list.filter(function(t){ return !S.removed[t]; });
     if(!final.length){ alert('The list would be empty. Keep at least one beat.'); btn.disabled = false; $('#discard').disabled = false; return; }
+    var pp = prProblem();
+    if(pp){ alert(pp); btn.disabled = false; $('#discard').disabled = false; return; }
     var removedTitles = Object.keys(S.removed);
     var ok = removedTitles.length ? confirm('Remove '+removedTitles.length+' beat'+(removedTitles.length>1?'s':'')+' from the site and delete the preview file'+(removedTitles.length>1?'s':'')+'?') : true;
     if(!ok){ btn.disabled = false; $('#discard').disabled = false; return; }
@@ -310,6 +497,9 @@ details summary{cursor:pointer;color:var(--muted)}
       return gh('GET',repoPath('/contents/beats.json?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json');
     }).then(function(cur){
       if(cur !== S.originalText) throw new Error('beats.json changed on GitHub since you opened this page. Reload the page and make your changes again so nothing is overwritten.');
+      return gh('GET',repoPath('/contents/prices.json?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json').catch(function(e){ if(e.status===404) return null; throw e; });
+    }).then(function(pcur){
+      if(pcur !== S.prText) throw new Error('prices.json changed on GitHub since you opened this page. Reload the page and make your changes again so nothing is overwritten.');
       return gh('GET',repoPath('/git/commits/'+commitSha));
     }).then(function(c){
       baseTree = c.tree.sha;
@@ -327,6 +517,11 @@ details summary{cursor:pointer;color:var(--muted)}
       return gh('POST',repoPath('/git/blobs'),{content:jsonText(final),encoding:'utf-8'});
     }).then(function(b){
       treeItems.push({path:'beats.json',mode:'100644',type:'blob',sha:b.sha});
+      if(!priceChanged()) return null;
+      st('Saving prices…');
+      return gh('POST',repoPath('/git/blobs'),{content:prJSON(liveSlugs()),encoding:'utf-8'});
+    }).then(function(pb){
+      if(pb) treeItems.push({path:'prices.json',mode:'100644',type:'blob',sha:pb.sha});
       removedTitles.forEach(function(t){
         var s = slug(t), names = [s+'.mp3']; if(OLD_SLUGS[t]) names.push(OLD_SLUGS[t]+'.mp3');
         names.forEach(function(n){
@@ -337,7 +532,8 @@ details summary{cursor:pointer;color:var(--muted)}
       return gh('POST',repoPath('/git/trees'),{base_tree:baseTree,tree:treeItems});
     }).then(function(tr){
       var added = final.filter(function(t){ return S.original.indexOf(t)<0; }).length;
-      var m = 'Admin: '+(added?added+' added':'')+(added&&removedTitles.length?', ':'')+(removedTitles.length?removedTitles.length+' removed':'')+(!added&&!removedTitles.length?'update list':'');
+      var bits = []; if(added) bits.push(added+' added'); if(removedTitles.length) bits.push(removedTitles.length+' removed'); if(priceChanged()) bits.push('prices updated');
+      var m = 'Admin: '+(bits.length ? bits.join(', ') : 'update list');
       st('Publishing…');
       return gh('POST',repoPath('/git/commits'),{message:m,tree:tr.sha,parents:[commitSha]});
     }).then(function(c){
@@ -362,7 +558,7 @@ details summary{cursor:pointer;color:var(--muted)}
     }).catch(function(e){ say($('#loginMsg'),e.message,'err'); });
   };
   $('#signout').onclick = function(){
-    if(Object.keys(S.files).length || changeCount().removed){ if(!confirm('You have unpublished changes. Sign out anyway?')) return; }
+    if(Object.keys(S.files).length || changeCount().removed || priceChanged()){ if(!confirm('You have unpublished changes. Sign out anyway?')) return; }
     lsDel('ap_admin'); location.reload();
   };
   $('#drop').onclick = function(){ $('#files').click(); };
@@ -374,7 +570,7 @@ details summary{cursor:pointer;color:var(--muted)}
   $('#addBtn').onclick = commitQueue;
   $('#filter').oninput = render;
   $('#publish').onclick = publish;
-  $('#discard').onclick = function(){ S.list = S.original.slice(); S.files = {}; S.removed = {}; render(); say($('#addMsg'),''); };
+  $('#discard').onclick = function(){ S.list = S.original.slice(); S.files = {}; S.removed = {}; S.pr = JSON.parse(JSON.stringify(S.prLoaded)); S.prBad = {}; S.prOpen = {}; renderPrices(); render(); say($('#addMsg'),''); say($('#prMsg'),''); };
   window.addEventListener('beforeunload',function(e){ if(!$('#bar').classList.contains('hidden')){ e.preventDefault(); e.returnValue = ''; } });
 
   try{
