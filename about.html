@@ -96,6 +96,13 @@ section{padding-block:56px 0}
 .term{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;min-width:0}
 .term h3{font:800 1.35rem/1.05 var(--f-display);text-transform:uppercase;letter-spacing:.03em}
 .term-price{margin-top:8px;font:500 1.05rem/1 var(--f-mono);color:var(--accent)}
+.term-price small{display:block;margin-top:5px;font:400 .72rem/1.3 var(--f-mono);color:var(--muted)}
+.term-note{margin-top:6px;font-size:.85rem;color:var(--muted)}
+.term-note a{color:var(--accent);text-decoration:underline}
+.curpick{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:.9rem;color:var(--muted)}
+.cursel{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font:inherit;font-size:.9rem;cursor:pointer}
+.cursel:hover{border-color:#3a3f4d}
+.rate-note{margin:-8px 0 18px;font-size:.82rem;color:var(--muted)}
 .term ul{list-style:none;margin:16px 0 0;padding:16px 0 0;border-top:1px solid var(--line);display:grid;gap:10px}
 .term li{position:relative;padding-left:22px;font-size:.9rem;color:var(--fg)}
 .term li::before{content:"";position:absolute;left:2px;top:.45em;width:9px;height:5px;border-left:2px solid var(--ok);border-bottom:2px solid var(--ok);transform:rotate(-45deg)}
@@ -277,11 +284,14 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   </section>
 
   <section id="usage-terms" aria-labelledby="termsH">
-    <div class="sec-head"><h2 id="termsH">Usage Terms</h2></div>
+    <div class="sec-head"><h2 id="termsH">Usage Terms</h2>
+      <div class="curpick"><label for="cur">Prices in</label><select id="cur" class="cursel" aria-label="Currency"><option value="NGN">Naira (&#8358;)</option></select></div>
+    </div>
+    <p class="rate-note" id="rateNote" hidden></p>
     <div class="terms">
       <article class="term">
         <h3>MP3 Lease</h3>
-        <p class="term-price">&#8358;30,000</p>
+        <p class="term-price" data-k="0">&#8358;30,000</p>
         <ul>
           <li>Used for music recording</li>
           <li>Distribute up to 1,000 copies</li>
@@ -293,7 +303,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
       </article>
       <article class="term">
         <h3>WAV Lease</h3>
-        <p class="term-price">&#8358;80,000</p>
+        <p class="term-price" data-k="1">&#8358;80,000</p>
         <ul>
           <li>Used for music recording</li>
           <li>Distribute up to 5,000 copies</li>
@@ -305,7 +315,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
       </article>
       <article class="term">
         <h3>WAV Unlimited Lease (Stems)</h3>
-        <p class="term-price">&#8358;160,000</p>
+        <p class="term-price" data-k="2">&#8358;160,000</p>
         <ul>
           <li>Used for music recording</li>
           <li>Distribute up to 10,000 copies</li>
@@ -317,7 +327,8 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
       </article>
       <article class="term">
         <h3>Exclusive Licence</h3>
-        <p class="term-price">&#8358;250,000</p>
+        <p class="term-price" id="exPrice">$400 &ndash; $2,000</p>
+        <p class="term-note">No fixed price. <a href="index.html#beats">Make an offer</a> on any beat&rsquo;s Exclusive option.</p>
         <ul>
           <li>Used for music recording</li>
           <li>Distribute unlimited copies</li>
@@ -350,7 +361,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
         </ul>
       </div>
     </div>
-    <div class="legal"><span>&copy; 2026 Austino Pro</span><span>Prices in Nigerian naira</span></div>
+    <div class="legal"><span>&copy; 2026 Austino Pro</span><span id="legalCur">Prices in Nigerian naira</span></div>
   </div>
 </footer>
 
@@ -359,6 +370,86 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   var nav = document.getElementById('nav'), burger = document.getElementById('burger');
   burger.addEventListener('click',function(){ var o = nav.classList.toggle('open'); this.setAttribute('aria-expanded', o); });
   nav.addEventListener('click',function(e){ if(e.target.closest('a')){ nav.classList.remove('open'); burger.setAttribute('aria-expanded','false'); } });
+})();
+</script>
+<script>
+// Prices on this page come from prices.json (set in the admin page), like the store. Nigerians see naira and visitors elsewhere see
+// dollars, using the browser's time zone and language (nothing is sent anywhere). The currency a visitor picks is remembered and shared with the store.
+(function(){
+  var CURS = [['NGN','Naira (\u20A6)','Nigerian naira'],['USD','US Dollar ($)','US dollars'],['GBP','British Pound (\u00A3)','British pounds'],['EUR','Euro (\u20AC)','euros']];
+  var NG = new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0});
+  var RATE_KEY = 'ap_rates_v1', CUR_KEY = 'ap_currency', FRESH = 6*3600*1000, STALE = 7*24*3600*1000;
+  var DEF = [30000,80000,160000], RATES = {NGN:1}, cur = 'NGN', auto = false, rateDate = '', fmt = {}, P = null, OFFER = {min:400,max:2000};
+  function $(s){ return document.querySelector(s); }
+  function lsGet(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }
+  function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }
+  function likelyNigeria(){
+    try{
+      var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '', langs = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language || ''];
+      if(tz === 'Africa/Lagos' || langs.some(function(l){ return /-NG$/i.test(l); })) return true;
+      return !tz;
+    }catch(_){ return true; }
+  }
+  function parse(c){
+    try{
+      if(!c || typeof c !== 'object') return;
+      var oc = c.offer; if(oc && +oc.min > 0 && +oc.max > +oc.min && +oc.max <= 1e7) OFFER = {min:+oc.min,max:+oc.max};
+      var k = c.currency, known = CURS.some(function(x){ return x[0] === k; }), rate = k === 'NGN' ? 1 : +c.rate, good = function(v){ return typeof v === 'number' && v > 0 && v <= 1e9; };
+      if(!known || !(rate > 0 && rate < 1e7) || !Array.isArray(c.prices) || c.prices.length < 3 || !c.prices.slice(0,3).every(good)) return;
+      P = {cur:k,rate:rate,tiers:c.prices.slice(0,3),live:(k !== 'NGN' && c.live === true)};
+      if(k !== 'NGN') RATES[k] = 1/rate;   // live mode: only the starting value until today's rate loads
+    }catch(_){ P = null; }
+  }
+  function fx(){ return P.live && RATES[P.cur] ? 1/RATES[P.cur] : P.rate; }
+  function tierNgn(k){ return P ? Math.round(P.tiers[k]*fx()) : DEF[k]; }
+  function money(n){
+    if(cur === 'NGN' || !RATES[cur]) return NG.format(n);
+    var f = fmt[cur] || (fmt[cur] = new Intl.NumberFormat('en-US',{style:'currency',currency:cur}));
+    return f.format(n*RATES[cur]);
+  }
+  function usd(n){ return '$'+n.toLocaleString('en-US',{maximumFractionDigits:2}); }
+  function render(){
+    document.querySelectorAll('.term-price[data-k]').forEach(function(e){ e.textContent = money(tierNgn(+e.getAttribute('data-k'))); });
+    var ex = $('#exPrice'); ex.textContent = usd(OFFER.min)+' \u2013 '+usd(OFFER.max);
+    if(cur !== 'USD' && RATES.USD){ var sm = document.createElement('small'); sm.textContent = '\u2248 '+money(OFFER.min/RATES.USD)+' \u2013 '+money(OFFER.max/RATES.USD); ex.appendChild(sm); }
+    var sel = $('#cur'), note = $('#rateNote'), legal = $('#legalCur');
+    sel.innerHTML = CURS.map(function(x){ var ok = x[0] === 'NGN' || !!RATES[x[0]]; return '<option value="'+x[0]+'"'+(x[0] === cur ? ' selected' : '')+(ok ? '' : ' disabled')+'>'+x[1]+(ok ? '' : ' (unavailable)')+'</option>'; }).join('');
+    if(cur !== 'NGN' && RATES[cur]){
+      var per = Math.round(1/RATES[cur]).toLocaleString('en-NG'), unit = {USD:'$1',GBP:'\u00A31',EUR:'\u20AC1'}[cur], own = P && P.cur === cur;
+      note.hidden = false;
+      note.textContent = own ? 'Orders are confirmed in naira at about \u20A6'+per+' per '+unit+'.' : 'Converted from naira at about \u20A6'+per+' per '+unit+(rateDate ? ' ('+rateDate+')' : '')+'. Orders are confirmed in naira, so the final amount may differ slightly.';
+      legal.textContent = 'Prices in '+CURS.filter(function(x){ return x[0] === cur; })[0][2]+(own ? '' : ', converted from naira');
+    } else { note.hidden = true; legal.textContent = 'Prices in Nigerian naira'; }
+  }
+  function cached(max){ try{ var o = JSON.parse(lsGet(RATE_KEY) || 'null'); if(o && o.rates && Date.now()-o.t < max) return o; }catch(_){} return null; }
+  function getJson(u){
+    var ctl = ('AbortController' in window) ? new AbortController() : null, to = setTimeout(function(){ if(ctl) ctl.abort(); },7000);
+    return fetch(u,{signal:ctl ? ctl.signal : undefined,cache:'no-store'}).then(function(r){ clearTimeout(to); if(!r.ok) throw 0; return r.json(); });
+  }
+  function srcA(){ return getJson('https://open.er-api.com/v6/latest/NGN').then(function(d){ if(!d || d.result !== 'success' || !d.rates) throw 0; return {USD:d.rates.USD,GBP:d.rates.GBP,EUR:d.rates.EUR}; }); }
+  function srcB(){ return getJson('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/ngn.json').then(function(d){ if(!d || !d.ngn) throw 0; return {USD:d.ngn.usd,GBP:d.ngn.gbp,EUR:d.ngn.eur}; }); }
+  function setRates(r,t){
+    RATES = {NGN:1,USD:r.USD,GBP:r.GBP,EUR:r.EUR}; fmt = {};
+    if(P && !P.live && P.cur !== 'NGN') RATES[P.cur] = 1/P.rate;
+    rateDate = new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    var want = lsGet(CUR_KEY);
+    if(want && RATES[want]) cur = want; else if(!want && !likelyNigeria() && RATES.USD){ cur = 'USD'; auto = true; }
+    render();
+  }
+  function loadRates(){
+    var f = cached(FRESH); if(f){ setRates(f.rates,f.t); return; }
+    srcA().catch(srcB).then(function(r){
+      if(!(r && r.USD > 0 && r.GBP > 0 && r.EUR > 0)) throw 0;
+      lsSet(RATE_KEY,JSON.stringify({rates:r,t:Date.now()})); setRates(r,Date.now());
+    }).catch(function(){ var o = cached(STALE); if(o) setRates(o.rates,o.t); else render(); });
+  }
+  $('#cur').addEventListener('change',function(){ if(this.value === 'NGN' || RATES[this.value]){ cur = this.value; lsSet(CUR_KEY,cur); render(); } else this.value = cur; });
+  render();
+  fetch('prices.json',{cache:'no-cache'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(parse).catch(function(){}).then(function(){
+    // visitors who already chose a currency keep it, even before today's rates arrive (their own-currency price shows from the saved rate)
+    var want = lsGet(CUR_KEY); if(want && RATES[want]) cur = want;
+    render(); loadRates();
+  });
 })();
 </script>
 </body>
