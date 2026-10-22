@@ -1,6 +1,6 @@
 {
   "currency": "USD",
-  "live": false,
+  "live": true,
   "rate": 1335,
   "prices": [
     25,
