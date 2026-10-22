@@ -150,6 +150,26 @@ section{padding-block:56px 0}
 .linkbox{grid-column:1/-1;display:flex;gap:8px;align-items:center;font-size:.8rem;color:var(--muted)}
 .linkbox input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:8px 10px;border-radius:6px;font:400 .8rem/1.2 var(--f-mono)}
 .price{font:500 1.05rem/1 var(--f-mono);font-variant-numeric:tabular-nums}
+.price.range{font-size:.88rem;line-height:1.2;text-align:right}
+.buy .price.range{flex:1 1 auto;min-width:0}
+@media(max-width:900px){.buy{flex-wrap:wrap}.buy .price.range{flex:1 1 100%;order:-1;text-align:left}.price.range .rg,.price.range small{display:inline}.price.range small{margin-left:10px}}
+@media(max-width:520px){.buy{gap:8px}.buy .btn{padding:10px 14px}}
+.price .rg{display:block;white-space:nowrap}
+.price small{display:block;margin-top:3px;font:400 .68rem/1.25 var(--f-mono);color:var(--muted)}
+#offerDlg{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:14px;padding:22px;width:min(420px,calc(100% - 32px))}
+#offerDlg::backdrop{background:rgba(0,0,0,.65)}
+#offerDlg h3{margin:0 0 4px;font-size:1.25rem}
+#offerDlg form{display:grid;gap:10px}
+#offerDlg label{font-size:.9rem;color:var(--muted)}
+#offerDlg .amt{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:0 14px}
+#offerDlg .amt:focus-within{border-color:var(--accent)}
+#offerDlg .amt input{flex:1;min-width:0;background:none;border:0;color:var(--fg);padding:12px 0;font:600 1.2rem/1 var(--f-mono);outline:none}
+#offerDlg .btn{width:100%;white-space:normal;text-align:center;line-height:1.25}
+#offerDlg input[type=email]{background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:12px 14px;border-radius:8px;font:inherit;width:100%}
+#offerDlg input[type=email]:focus{border-color:var(--accent);outline:none}
+#offerDlg .btn[disabled]{opacity:.4;cursor:not-allowed}
+#offerDlg [hidden]{display:none!important}
+#offerDlg .err{color:var(--bad)}
 .buy .btn{padding:10px 20px}
 .prog{position:absolute;left:0;bottom:0;height:2px;width:100%;background:var(--accent);transform:scaleX(0);transform-origin:left}
 .empty{padding:28px;color:var(--muted);text-align:center}
@@ -271,6 +291,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
 .d-foot .btn{width:100%;white-space:normal;text-align:center;line-height:1.25;letter-spacing:.02em}
 .d-foot .btn[disabled]{opacity:.4;cursor:not-allowed}
 .note{font-size:.8rem;color:var(--muted)}
+.note:empty{display:none}
 .done{padding:28px 0;display:grid;gap:12px}
 .done h4{font:800 1.8rem/1 var(--f-display);text-transform:uppercase;color:var(--ok)}
 
@@ -419,20 +440,38 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   <div class="d-body" id="cartBody"></div>
   <form class="d-foot" id="payForm" novalidate>
     <button class="btn btn-ghost" id="contShop" type="button">&larr; Continue shopping</button>
-    <div class="curpick curpick-cart">
-      <label for="curCart">Currency</label>
-      <select id="curCart" class="cursel"><option value="NGN">Naira (₦)</option></select>
-    </div>
     <div class="total"><span>Total</span><span id="total">&#8358;0</span></div>
     <p class="note" id="rateNote" hidden></p>
     <label class="sr" for="payEmail">Email</label>
     <input id="payEmail" type="email" placeholder="Email (optional)" autocomplete="email">
     <button class="btn btn-primary" id="flwBtn" type="button" hidden disabled>PAY NOW <small>card, bank transfer or USSD</small></button>
-    <p class="or" id="flwOr" hidden><span>or</span></p>
     <button class="btn btn-primary" id="payBtn" type="submit" disabled>CHECKOUT VIA WHATSAPP</button>
-    <p class="note" id="payNote">Your order opens in WhatsApp for you to send. Payment is arranged and confirmed in the chat, and your files are sent once it is confirmed.</p>
+    <p class="note" id="payNote"></p>
   </form>
 </aside>
+
+<dialog id="offerDlg" aria-labelledby="offerTitle">
+  <form id="offerForm" novalidate>
+    <h3 id="offerTitle">Make an offer</h3>
+    <p class="note" id="offerFor"></p>
+    <label for="offerAmt">Your offer in US dollars</label>
+    <div class="amt"><span aria-hidden="true">$</span><input id="offerAmt" type="text" inputmode="decimal" autocomplete="off" placeholder="0"></div>
+    <p class="note" id="offerRange"></p>
+    <p class="note" id="offerEq"></p>
+    <label for="offerEmail" id="offerEmailL">Email (needed to pay online, optional for WhatsApp)</label>
+    <input id="offerEmail" type="email" autocomplete="email" placeholder="you@example.com">
+    <p class="note err" id="offerErr" role="alert"></p>
+    <button class="btn btn-primary" id="offerPay" type="button" hidden disabled>PAY NOW <small>card, bank transfer or USSD</small></button>
+    <button class="btn btn-ghost" id="offerSend" type="submit" disabled>SEND OFFER ON WHATSAPP</button>
+    <button class="btn btn-ghost" id="offerCancel" type="button">Cancel</button>
+  </form>
+  <div id="offerPaid" hidden>
+    <h3 style="color:var(--ok)">Payment received ✓</h3>
+    <p class="note" id="offerPaidTxt"></p>
+    <a class="btn btn-primary" id="offerPaidWa" href="#" target="_blank" rel="noopener noreferrer" style="margin-top:12px">SEND DETAILS ON WHATSAPP</a>
+    <button class="btn btn-ghost" id="offerPaidClose" type="button" style="margin-top:8px">Close</button>
+  </div>
+</dialog>
 
 <div id="player" class="player" hidden role="region" aria-label="Music player">
   <div class="pl-top">
@@ -450,7 +489,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
 </div>
 <script src="config.js"></script>
 <script>
-function startStore(REMOTE){
+function startStore(REMOTE,PRICECFG,METACFG){
   var NGN = new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0});
   // Naira is the base price. Other currencies are converted from naira with a live exchange rate (see "currency" below).
   var CURRENCIES = [{c:'NGN',n:'Naira (₦)',w:'Nigerian naira'},{c:'USD',n:'US Dollar ($)',w:'US dollars'},{c:'GBP',n:'British Pound (£)',w:'British pounds'},{c:'EUR',n:'Euro (€)',w:'euros'}];
@@ -499,7 +538,7 @@ function startStore(REMOTE){
   beats.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
   var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   function fmtDate(s){ var p = s.split('-'); return +p[2]+' '+MONTHS[+p[1]-1]+' '+p[0]; }
-  var PRICES = [30000,80000,160000,250000];
+  var PRICES = [30000,80000,160000,250000];   // default naira prices, used only if prices.json is missing or invalid
   var LIC = [
     {k:0,label:'MP3',cart:'Basic MP3 lease'},
     {k:1,label:'WAV',cart:'WAV lease'},
@@ -513,6 +552,60 @@ function startStore(REMOTE){
   // Old addresses for renamed beats: shared links and existing audio files under the old name keep working.
   var OLD_SLUGS = {"LET'S FLOW":"let's-flow",'ALONE':'aione','OVADOSE':'overdose','GIVE ME LOVE':'give-me-love','JIGGY':'jiggy-2','TIME':'time-new','TOUCH YOUR BODY':'touch-you-body-new-2','WINE':'wine-2'};
   beats.forEach(function(b){ b.slug = slug(b.t); b.old = OLD_SLUGS[b.t] || null; });
+  // Genre and BPM set in the admin page (meta.json): {slug:{g:'Afrobeats',bpm:100}}. Cleaned here before anything is shown.
+  try{
+    if(METACFG && typeof METACFG === 'object') beats.forEach(function(b){
+      var m = METACFG[b.slug]; if(!m || typeof m !== 'object') return;
+      var g = typeof m.g === 'string' ? m.g.replace(/[<>"'`\\]/g,'').replace(/\s+/g,' ').trim().slice(0,24) : '';
+      var bpm = Math.round(+m.bpm);
+      if(g) b.g = g;
+      if(bpm >= 40 && bpm <= 300) b.bpm = bpm;
+    });
+  }catch(_){}
+  // Prices set in the admin page (prices.json): {currency, rate (naira per 1 unit), prices:[4 licences], beats:{slug:{licenceIndex:price}}}.
+  // Every price is checked here; anything odd is ignored and the built-in naira prices are used instead.
+  var PCFG = null;
+  (function(c){
+    try{
+      if(!c || typeof c !== 'object') return;
+      var cur = c.currency, known = CURRENCIES.some(function(x){ return x.c === cur; });
+      var rate = cur === 'NGN' ? 1 : +c.rate, good = function(v){ return typeof v === 'number' && v > 0 && v <= 1e9; };
+      if(!known || !(rate > 0 && rate < 1e7)) return;
+      if(!Array.isArray(c.prices) || c.prices.length < 3 || !c.prices.slice(0,3).every(good)) return;
+      var ov = {};
+      if(c.beats && typeof c.beats === 'object') Object.keys(c.beats).forEach(function(k){
+        var o = c.beats[k], m = {}; if(!o || typeof o !== 'object') return;
+        for(var j=0;j<3;j++) if(good(o[j])) m[j] = o[j];
+        ov[k] = m;
+      });
+      PCFG = {cur:cur,rate:rate,tiers:c.prices.slice(0,3),ov:ov,live:(cur !== 'NGN' && c.live === true)};
+    }catch(_){ PCFG = null; }
+  })(PRICECFG);
+  // Exclusive beats have no fixed price: buyers make an offer inside this range, always in US dollars.
+  var OFFER = {min:400,max:2000};
+  try{ var oc = PRICECFG && PRICECFG.offer; if(oc && +oc.min > 0 && +oc.max > +oc.min && +oc.max <= 1e7) OFFER = {min:+oc.min,max:+oc.max}; }catch(_){}
+  function nativeOf(b,k){ if(!PCFG) return PRICES[k]; var o = PCFG.ov[b.slug]; return (o && o[k] != null) ? o[k] : PCFG.tiers[k]; }
+  // The price of a beat in naira (the unit the cart, the bundle deal and the WhatsApp order all use).
+  // Naira per 1 unit of the currency the prices were set in. Live mode follows today's exchange rate (the saved rate is only a backup).
+  function fx(){ return PCFG.live && RATES[PCFG.cur] ? 1/RATES[PCFG.cur] : PCFG.rate; }
+  function priceOf(b,k){ var v = nativeOf(b,k); return PCFG ? Math.round(v*fx()) : v; }
+  function usd(n){ return '$'+n.toLocaleString('en-US',{maximumFractionDigits:2}); }
+  // What shows where the price normally is. Exclusive (licence 3) shows the offer range instead of a price.
+  function priceHTML(b,k){
+    if(k !== 3) return money(priceOf(b,k));
+    var h = '<span class="rg">'+usd(OFFER.min)+' &ndash; '+usd(OFFER.max)+'</span>';
+    if(curCode !== 'USD' && RATES.USD) h += '<small>&asymp; '+money(OFFER.min/RATES.USD)+' &ndash; '+money(OFFER.max/RATES.USD)+'</small>';
+    return h;
+  }
+  function paintBuy(row,b){
+    var k = sel[b.id], pe = row.querySelector('.price'), bt = row.querySelector('.buy-btn');
+    if(pe){ pe.innerHTML = priceHTML(b,k); pe.classList.toggle('range',k === 3); }
+    if(bt) bt.textContent = k === 3 ? 'Make an offer' : 'Buy';
+  }
+  function repriceCart(){ cart.forEach(function(i,k){ var b = byId[k.slice(5)], l = LIC.filter(function(x){ return x.cart === i.ln; })[0]; if(b && l) i.price = priceOf(b,l.k); }); }
+  // If prices are set in dollars (or pounds, euros), that currency uses your own rate so the price shows exactly as you set it.
+  function pinRate(){ if(PCFG && PCFG.cur !== 'NGN') RATES[PCFG.cur] = 1/PCFG.rate; }   // in live mode this is only the starting value until today's rate loads
+  pinRate();
   function beatLink(b){ return SITE_URL + '#beat-' + b.slug; }
   var ICON_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.8l7.4-4.4M8.3 13.2l7.4 4.4"/></svg>';
   var sel = {}; beats.forEach(function(b){sel[b.id]=1});  // 0 = MP3, 1 = WAV (default), 2 = Unlimited, 3 = Exclusive
@@ -553,7 +646,7 @@ function startStore(REMOTE){
       '<button class="play"'+(live?'':' disabled')+' type="button" aria-label="'+(live?'Play preview of ':wait?'Loading preview for ':'Preview coming soon for ')+b.t+'">'+ICON_PLAY+'</button>'+
       '<div class="info"><h4><a href="#beat-'+b.slug+'">'+b.t+'</a></h4><p class="meta">'+meta.join('')+'</p></div>'+
       '<div class="fmts" role="group" aria-label="File format for '+b.t+'">'+chips+'</div>'+
-      '<div class="buy"><button class="fav" type="button" aria-pressed="'+(!!favs[b.slug])+'" aria-label="'+(favs[b.slug]?'Remove ':'Add ')+b.t+(favs[b.slug]?' from':' to')+' favourites" title="Favourite">'+ICON_HEART+'</button><button class="share" type="button" aria-label="Copy link to '+b.t+'" title="Copy link">'+ICON_SHARE+'<span class="st">Share</span></button><span class="price">'+money(PRICES[sel[b.id]])+'</span><button class="btn btn-primary buy-btn" type="button">Buy</button></div>'+
+      '<div class="buy"><button class="fav" type="button" aria-pressed="'+(!!favs[b.slug])+'" aria-label="'+(favs[b.slug]?'Remove ':'Add ')+b.t+(favs[b.slug]?' from':' to')+' favourites" title="Favourite">'+ICON_HEART+'</button><button class="share" type="button" aria-label="Copy link to '+b.t+'" title="Copy link">'+ICON_SHARE+'<span class="st">Share</span></button><span class="price'+(sel[b.id]===3?' range':'')+'">'+priceHTML(b,sel[b.id])+'</span><button class="btn btn-primary buy-btn" type="button">'+(sel[b.id]===3?'Make an offer':'Buy')+'</button></div>'+
       '<i class="prog" aria-hidden="true"></i></article>';
   }
   function pageNums(cur,total){
@@ -615,13 +708,14 @@ function startStore(REMOTE){
     if(f){
       sel[id] = +f.getAttribute('data-k');
       row.querySelectorAll('.fmt').forEach(function(x){x.setAttribute('aria-pressed', x===f)});
-      row.querySelector('.price').textContent = money(PRICES[sel[id]]);
+      paintBuy(row,b);
       return;
     }
     var sh = e.target.closest('.share');
     if(sh){ shareBeat(b,sh,row); return; }
     if(e.target.closest('.buy-btn')){
-      addCart('beat-'+id,{title:b.t,lic:LIC[sel[id]].cart+(b.bpm?' · '+b.bpm+' BPM':''),ln:LIC[sel[id]].cart,price:PRICES[sel[id]]});
+      if(sel[id] === 3){ openOffer(b); return; }
+      addCart('beat-'+id,{title:b.t,lic:LIC[sel[id]].cart+(b.bpm?' · '+b.bpm+' BPM':''),ln:LIC[sel[id]].cart,price:priceOf(b,sel[id])});
       openCart();
     }
   });
@@ -682,7 +776,7 @@ function startStore(REMOTE){
       var saved = JSON.parse(sessionStorage.getItem(CART_KEY) || '[]');
       saved.forEach(function(e){
         var b = beats.filter(function(x){ return x.slug === e[0]; })[0], l = LIC[e[1]];
-        if(b && l) cart.set('beat-'+b.id,{title:b.t,lic:l.cart+(b.bpm?' · '+b.bpm+' BPM':''),ln:l.cart,price:PRICES[l.k]});
+        if(b && l && l.k !== 3) cart.set('beat-'+b.id,{title:b.t,lic:l.cart+(b.bpm?' · '+b.bpm+' BPM':''),ln:l.cart,price:priceOf(b,l.k)});
       });
     }catch(_){}
   }
@@ -730,7 +824,7 @@ function startStore(REMOTE){
     $('#payBtn').disabled = !n || waBusy;
     $('#payBtn').textContent = FLW_ON ? 'ORDER ON WHATSAPP' : 'CHECKOUT VIA WHATSAPP';
     $('#payBtn').classList.toggle('btn-ghost',FLW_ON); $('#payBtn').classList.toggle('btn-primary',!FLW_ON);
-    $('#flwBtn').hidden = !FLW_ON; $('#flwOr').hidden = !FLW_ON;
+    $('#flwBtn').hidden = !FLW_ON;
     $('#flwBtn').disabled = !n || flwBusy;
     saveCart();
   }
@@ -766,7 +860,7 @@ function startStore(REMOTE){
       var li = LIC.filter(function(l){ return l.cart === i.ln; })[0];
       if(typeof i.title !== 'string' || !i.title.trim()) bad = 'One item in your cart has no title. Please remove it and add it again.';
       else if(!li) bad = 'Please pick a licence for '+i.title+' again.';
-      else if(i.price !== PRICES[li.k]) bad = 'The price for '+i.title+' could not be verified. Please remove it and add it again.';
+      else if(i.price !== (byId[k.slice(5)] ? priceOf(byId[k.slice(5)],li.k) : PRICES[li.k])) bad = 'The price for '+i.title+' could not be verified. Please remove it and add it again.';
       else if(k.indexOf('beat-') === 0 && (!byId[k.slice(5)] || byId[k.slice(5)].t !== i.title)) bad = i.title+' is not in the catalogue. Please remove it from your cart.';
       sum += i.price;
     });
@@ -862,7 +956,7 @@ function startStore(REMOTE){
     $('#payEmail').placeholder = 'Email (needed to pay online)';
     $('#payNote').textContent = DEFAULT_NOTE = FLW_TEST
       ? 'TEST MODE: payments made now are not real. Remove the test key in config.js to go live.'
-      : 'Pay now to pay online, then send us your order on WhatsApp so we can deliver your files. Or order on WhatsApp and arrange payment in the chat.';
+      : '';
   }
   $('#payForm').addEventListener('submit',function(e){
     e.preventDefault();
@@ -882,6 +976,106 @@ function startStore(REMOTE){
     showNote('WhatsApp is opening with your order ('+ref+'). Press Send there to submit it. Nothing is paid until we confirm in the chat.',false,url);
     setTimeout(function(){ waBusy = false; renderCart(); },3000);
   });
+  /* ---------- exclusive offers ---------- */
+  var offerBeat = null, offerDlg = $('#offerDlg'), offerBusy = false;
+  function offerAmount(){
+    var raw = $('#offerAmt').value.replace(/[$,\s]/g,'');
+    if(!/^\d+(\.\d{1,2})?$/.test(raw)) return NaN;
+    return parseFloat(raw);
+  }
+  function offerOK(){ var v = offerAmount(); return v >= OFFER.min && v <= OFFER.max; }
+  // The pay and offer buttons only work while the amount is inside the range set in the admin page.
+  function offerRefresh(){
+    var v = offerAmount(), ok = offerOK(), raw = $('#offerAmt').value.trim(), eq = $('#offerEq'), err = $('#offerErr');
+    $('#offerPay').disabled = !ok || offerBusy; $('#offerSend').disabled = !ok || offerBusy;
+    $('#offerPay').firstChild.textContent = ok ? 'PAY '+usd(v)+' NOW ' : 'PAY NOW ';
+    eq.textContent = (v > 0 && RATES.USD) ? 'About '+NGN.format(v/RATES.USD)+' in naira at today\'s rate.' : '';
+    err.style.color = '';
+    err.textContent = (raw && !ok) ? 'Enter an amount between '+usd(OFFER.min)+' and '+usd(OFFER.max)+' to continue.' : '';
+  }
+  function showOffer(){
+    if(offerDlg.open) return;
+    if(offerDlg.showModal) offerDlg.showModal(); else offerDlg.setAttribute('open','');
+  }
+  function openOffer(b){
+    offerBeat = b; offerBusy = false;
+    $('#offerFor').textContent = b.t+' · Exclusive rights';
+    $('#offerRange').textContent = 'We accept offers from '+usd(OFFER.min)+' to '+usd(OFFER.max)+'.';
+    $('#offerAmt').value = ''; $('#offerErr').textContent = '';
+    $('#offerForm').hidden = false; $('#offerPaid').hidden = true;
+    $('#offerPay').hidden = !FLW_ON;
+    $('#offerEmailL').textContent = FLW_ON ? 'Email (needed to pay online, optional for WhatsApp)' : 'Email (optional)';
+    offerRefresh();
+    lastFocus = document.activeElement;
+    showOffer();
+    setTimeout(function(){ $('#offerAmt').focus(); },50);
+  }
+  function closeOffer(){
+    if(offerDlg.close) offerDlg.close(); else offerDlg.removeAttribute('open');
+    if(lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  function offerMessage(v,email,pay){
+    var b = offerBeat, L = ['Hello Austino Pro! 👋','',pay ? "I've paid online for an Exclusive rights offer." : '🎵 EXCLUSIVE RIGHTS OFFER','',
+      'Beat: '+b.t+(b.bpm?' · '+b.bpm+' BPM':''),'Licence: Exclusive rights',
+      (pay ? '💰 Offer paid: ' : '💰 My offer: ')+usd(v)+(RATES.USD?' (about '+NGN.format(v/RATES.USD)+' in naira)':'')];
+    if(pay) L.push('','✅ PAID ONLINE (Flutterwave)','Payment Ref: '+pay.ref,'Flutterwave ID: '+pay.id,'Amount paid: '+pay.shown);
+    if(email) L.push('','Customer Email: '+email);
+    L.push('',pay ? 'Please confirm my payment and tell me the next steps.' : 'Please let me know if you accept, and how to pay.','','Beat link: '+beatLink(b),'','Store: '+SITE_URL);
+    return L.join('\n');
+  }
+  $('#offerAmt').addEventListener('input',offerRefresh);
+  $('#offerCancel').addEventListener('click',closeOffer);
+  $('#offerPaidClose').addEventListener('click',closeOffer);
+  $('#offerForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    var err = $('#offerErr');
+    if(!offerBeat || !offerOK()){ offerRefresh(); $('#offerAmt').focus(); return; }
+    var v = offerAmount(), url = waUrl(offerMessage(v,$('#offerEmail').value.trim(),null)), a = document.createElement('a');
+    a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.style.display = 'none';
+    document.body.appendChild(a); a.click(); a.remove();
+    err.style.color = 'var(--ok)'; err.textContent = 'WhatsApp is opening with your offer. Press Send there to submit it. ';
+    var l = document.createElement('a'); l.href = url; l.target = '_blank'; l.rel = 'noopener noreferrer'; l.textContent = 'Tap here if it did not open.'; l.style.textDecoration = 'underline'; err.appendChild(l);
+  });
+  // Pay online with Flutterwave, in US dollars, for the offer the buyer entered. The page cannot prove a payment happened:
+  // always check the reference, amount and currency in your Flutterwave dashboard before sending any files.
+  $('#offerPay').addEventListener('click',function(){
+    var err = $('#offerErr');
+    if(offerBusy || !FLW_ON || !offerBeat) return;
+    if(!offerOK()){ offerRefresh(); $('#offerAmt').focus(); return; }
+    var email = $('#offerEmail').value.trim();
+    err.style.color = '';
+    if(!EMAIL_RE.test(email)){ err.textContent = 'Enter your email address to pay online. Your receipt is sent there.'; $('#offerEmail').focus(); return; }
+    if(!window.FlutterwaveCheckout){ loadFlw(); err.textContent = 'Online payment is still loading or could not load. Try again in a moment, or send your offer on WhatsApp.'; return; }
+    var v = offerAmount(), b = offerBeat, ref = txRef(), shown = usd(v), done = false, modal;
+    offerBusy = true; offerRefresh();
+    closeOffer();   // the dialog sits above everything else, so it is closed while the payment window is open
+    function back(msg,bad){ offerBusy = false; showOffer(); offerRefresh(); if(msg){ err.style.color = bad ? '' : 'var(--ok)'; err.textContent = msg; } }
+    try{
+      modal = window.FlutterwaveCheckout({
+        public_key: FLW_KEY, tx_ref: ref, amount: v, currency: 'USD',
+        customer: {email: email},
+        meta: {order: ('Exclusive rights offer: '+b.t).slice(0,240), offer_usd: v},
+        customizations: {title: 'Austino Pro', description: 'Exclusive offer '+ref},
+        callback: function(res){
+          if(done) return;
+          var st = String((res && res.status) || '').toLowerCase();
+          if(st === 'successful' || st === 'completed'){
+            done = true; offerBusy = false;
+            var pay = {ref: ref, id: String((res && (res.transaction_id || res.id)) || 'n/a'), shown: shown};
+            var url = waUrl(offerMessage(v,email,pay));
+            setPaid({ref: ref, id: pay.id, shown: shown, url: url}); renderCart();
+            $('#offerForm').hidden = true; $('#offerPaid').hidden = false;
+            $('#offerPaidTxt').textContent = 'Reference: '+ref+' · Amount: '+shown+'. One more step: send the details on WhatsApp so we can confirm your payment and arrange the exclusive rights for '+b.t+'.';
+            $('#offerPaidWa').href = url;
+            try{ if(modal && typeof modal.close === 'function') modal.close(); }catch(_){}
+            showOffer();
+          } else back('The payment was not completed. If money left your account, send us this reference on WhatsApp: '+ref,true);
+        },
+        onclose: function(){ if(!done) back('',true); }
+      });
+    }catch(_){ back('Online payment could not start. Please try again or send your offer on WhatsApp.',true); }
+  });
+  offerDlg.addEventListener('click',function(e){ if(e.target === offerDlg) closeOffer(); });
   var lastFocus = null;
   function openCart(){
     lastFocus = document.activeElement;
@@ -1261,7 +1455,7 @@ function startStore(REMOTE){
   }); }
   function validRates(r){ return r && r.USD > 0 && r.GBP > 0 && r.EUR > 0; }
   function setRates(r,t){
-    RATES = {NGN:1,USD:r.USD,GBP:r.GBP,EUR:r.EUR}; fmtCache = {};
+    RATES = {NGN:1,USD:r.USD,GBP:r.GBP,EUR:r.EUR}; if(PCFG && !PCFG.live) pinRate(); repriceCart(); fmtCache = {};
     var d = new Date(t); rateDate = d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
     var want = lsGet(CUR_KEY);
     if(want && RATES[want]) curCode = want;
@@ -1286,12 +1480,18 @@ function startStore(REMOTE){
       var ok = x.c === 'NGN' || !!RATES[x.c];
       return '<option value="'+x.c+'"'+(x.c===curCode?' selected':'')+(ok?'':' disabled')+'>'+x.n+(ok?'':' (unavailable)')+'</option>';
     }).join('');
-    $('#cur').innerHTML = html; $('#curCart').innerHTML = html;
+    $('#cur').innerHTML = html;
   }
   function applyCurrency(){
-    $('#cur').value = curCode; $('#curCart').value = curCode;
+    $('#cur').value = curCode;
     var unit = {USD:'$1',GBP:'£1',EUR:'€1'}[curCode], hint = $('#rateHint'), note = $('#rateNote'), legal = $('#legalCur');
-    if(curCode !== 'NGN' && RATES[curCode]){
+    if(PCFG && PCFG.cur === curCode && curCode !== 'NGN'){
+      var fxs = Math.round(fx()).toLocaleString('en-NG');
+      hint.textContent = '';
+      note.hidden = false;
+      note.textContent = 'Orders are confirmed in naira at '+(PCFG.live?'about ':'')+'₦'+fxs+' per '+unit+(PCFG.live && rateDate?' ('+rateDate+')':'')+'.';
+      legal.textContent = 'Prices in '+CURRENCIES.filter(function(x){return x.c===curCode;})[0].w;
+    } else if(curCode !== 'NGN' && RATES[curCode]){
       var per = Math.round(1/RATES[curCode]).toLocaleString('en-NG');
       hint.textContent = '≈ ₦'+per+' per '+unit+(rateDate?' · '+rateDate:'')+(autoCur?' · picked for your region':'');
       note.hidden = false;
@@ -1303,7 +1503,7 @@ function startStore(REMOTE){
     }
     document.querySelectorAll('.beat').forEach(function(r){
       var b = byId[+r.getAttribute('data-id')], pe = r.querySelector('.price');
-      if(b && pe) pe.textContent = money(PRICES[sel[b.id]]);
+      if(b && pe) paintBuy(r,b);
     });
     renderCart();
   }
@@ -1312,7 +1512,6 @@ function startStore(REMOTE){
     curCode = code; autoCur = false; lsSet(CUR_KEY,code); applyCurrency();
   }
   $('#cur').addEventListener('change',function(){ setCurrency(this.value); });
-  $('#curCart').addEventListener('change',function(){ setCurrency(this.value); });
 
   restoreCart();
   renderChips(); renderStore(); renderCart();
@@ -1327,12 +1526,20 @@ function startStore(REMOTE){
   jumpToBeats();
   window.addEventListener('load',jumpToBeats);
 }
-// The beat list lives in beats.json (newest first). If it can't be loaded the built-in list below is used.
+// The beat list lives in beats.json (newest first) and the prices in prices.json (written by the admin page).
+// If beats.json can't be loaded the built-in list below is used; if prices.json is missing the built-in naira prices are used.
 (function(){
   var done = false;
-  function go(list){ if(done) return; done = true; startStore(list); }
+  function go(list,prices,meta){ if(done) return; done = true; startStore(list,prices,meta); }
+  function getJSON(url,retry){
+    return fetch(url,{cache:'no-cache'}).then(function(r){
+      if(r.status === 404) return null;
+      if(!r.ok) throw 0;
+      return r.json();
+    }).catch(function(){ return retry ? getJSON(url,false) : null; });
+  }
   try{
-    fetch('beats.json',{cache:'no-cache'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){
+    var pBeats = getJSON('beats.json',false).then(function(d){
       var a = Array.isArray(d) ? d : (d && d.beats);
       var seen = {}, out = [];
       (a||[]).forEach(function(t){
@@ -1340,10 +1547,12 @@ function startStore(REMOTE){
         t = t.replace(/[<>"`\\]/g,'').replace(/\s+/g,' ').trim().toUpperCase(); if(!t) return;
         var k = t.toLowerCase().replace(/[^a-z0-9]+/g,'-'); if(seen[k]) return; seen[k] = 1; out.push(t);
       });
-      go(out.length ? out : null);
-    }).catch(function(){ go(null); });
-    setTimeout(function(){ go(null); },6000);
-  }catch(_){ go(null); }
+      return out.length ? out : null;
+    });
+    var pPrices = getJSON('prices.json',true), pMeta = getJSON('meta.json',true);
+    Promise.all([pBeats,pPrices,pMeta]).then(function(a){ go(a[0],a[1],a[2]); }).catch(function(){ go(null,null,null); });
+    setTimeout(function(){ go(null,null,null); },6000);
+  }catch(_){ go(null,null,null); }
 })();
 </script>
 
