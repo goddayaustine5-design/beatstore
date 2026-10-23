@@ -552,12 +552,18 @@ function startStore(REMOTE,PRICECFG,METACFG){
   // Old addresses for renamed beats: shared links and existing audio files under the old name keep working.
   var OLD_SLUGS = {"LET'S FLOW":"let's-flow",'ALONE':'aione','OVADOSE':'overdose','GIVE ME LOVE':'give-me-love','JIGGY':'jiggy-2','TIME':'time-new','TOUCH YOUR BODY':'touch-you-body-new-2','WINE':'wine-2'};
   beats.forEach(function(b){ b.slug = slug(b.t); b.old = OLD_SLUGS[b.t] || null; });
-  // Genre and BPM set in the admin page (meta.json): {slug:{g:'Afrobeats',bpm:100}}. Cleaned here before anything is shown.
+  var KEYS = (function(){
+    var n = ['C','C\u266F','D\u266D','D','D\u266F','E\u266D','E','F','F\u266F','G\u266D','G','G\u266F','A\u266D','A','A\u266F','B\u266D','B'], out = [];
+    n.forEach(function(x){ out.push(x+' major'); }); n.forEach(function(x){ out.push(x+' minor'); });
+    return out;
+  })();
+  // Genre, BPM and key set in the admin page (meta.json): {slug:{g:'Afrobeats',bpm:100}}. Cleaned here before anything is shown.
   try{
     if(METACFG && typeof METACFG === 'object') beats.forEach(function(b){
       var m = METACFG[b.slug]; if(!m || typeof m !== 'object') return;
       var g = typeof m.g === 'string' ? m.g.replace(/[<>"'`\\]/g,'').replace(/\s+/g,' ').trim().slice(0,24) : '';
       var bpm = Math.round(+m.bpm);
+      if(KEYS.indexOf(m.k) >= 0) b.key = m.k;
       if(g) b.g = g;
       if(bpm >= 40 && bpm <= 300) b.bpm = bpm;
     });
@@ -587,7 +593,8 @@ function startStore(REMOTE,PRICECFG,METACFG){
   function nativeOf(b,k){ if(!PCFG) return PRICES[k]; var o = PCFG.ov[b.slug]; return (o && o[k] != null) ? o[k] : PCFG.tiers[k]; }
   // The price of a beat in naira (the unit the cart, the bundle deal and the WhatsApp order all use).
   // Naira per 1 unit of the currency the prices were set in. Live mode follows today's exchange rate (the saved rate is only a backup).
-  function fx(){ return PCFG.live && RATES[PCFG.cur] ? 1/RATES[PCFG.cur] : PCFG.rate; }
+  // Live mode follows today's rate, but a live rate more than 50% away from the rate you saved is ignored (a safety check).
+  function fx(){ var live = PCFG.live && RATES[PCFG.cur] ? 1/RATES[PCFG.cur] : 0; return live && Math.abs(live/PCFG.rate - 1) <= 0.5 ? live : PCFG.rate; }
   function priceOf(b,k){ var v = nativeOf(b,k); return PCFG ? Math.round(v*fx()) : v; }
   function usd(n){ return '$'+n.toLocaleString('en-US',{maximumFractionDigits:2}); }
   // What shows where the price normally is. Exclusive (licence 3) shows the offer range instead of a price.
@@ -893,7 +900,7 @@ function startStore(REMOTE,PRICECFG,METACFG){
   // so ALWAYS check the reference, amount and currency in your Flutterwave dashboard before sending any files.
   var flwBusy = false, PAID_KEY = 'ap_paid';
   function esc(t){ return String(t).replace(/[&<>"']/g,function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
-  function getPaid(){ try{ var o = JSON.parse(sessionStorage.getItem(PAID_KEY)||'null'); return o && o.ref && o.url ? o : null; }catch(_){ return null; } }
+  function getPaid(){ try{ var o = JSON.parse(sessionStorage.getItem(PAID_KEY)||'null'); return o && /^AP-[A-Z0-9-]{4,40}$/.test(String(o.ref)) && typeof o.url === 'string' && o.url.indexOf('https://wa.me/') === 0 ? o : null; }catch(_){ return null; } }
   function setPaid(o){ try{ if(o) sessionStorage.setItem(PAID_KEY,JSON.stringify(o)); else sessionStorage.removeItem(PAID_KEY); }catch(_){} }
   function loadFlw(){
     if(!FLW_ON || window.FlutterwaveCheckout || document.getElementById('flwScript')) return;
@@ -1438,7 +1445,7 @@ function startStore(REMOTE,PRICECFG,METACFG){
   function lsGet(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }
   function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }
   function cachedRates(maxAge){
-    try{ var o = JSON.parse(lsGet(RATE_KEY)||'null'); if(o && o.rates && Date.now()-o.t < maxAge) return o; }catch(_){}
+    try{ var o = JSON.parse(lsGet(RATE_KEY)||'null'); if(o && typeof o.t === 'number' && validRates(o.rates) && Date.now()-o.t < maxAge) return o; }catch(_){}
     return null;
   }
   function fetchJson(url){
@@ -1453,9 +1460,12 @@ function startStore(REMOTE,PRICECFG,METACFG){
     if(!d || !d.ngn) throw new Error('bad');
     return {USD:d.ngn.usd,GBP:d.ngn.gbp,EUR:d.ngn.eur};
   }); }
-  function validRates(r){ return r && r.USD > 0 && r.GBP > 0 && r.EUR > 0; }
+  // Exchange rates must be real numbers in a believable range (units per 1 naira: roughly N100 to N30,000 per unit).
+  // Anything else (a broken service, a tampered cache) is thrown away and the saved naira prices are used.
+  function okRate(v){ return typeof v === 'number' && isFinite(v) && v > 1/30000 && v < 1/100; }
+  function validRates(r){ return !!r && okRate(r.USD) && okRate(r.GBP) && okRate(r.EUR); }
   function setRates(r,t){
-    RATES = {NGN:1,USD:r.USD,GBP:r.GBP,EUR:r.EUR}; if(PCFG && !PCFG.live) pinRate(); repriceCart(); fmtCache = {};
+    RATES = {NGN:1,USD:r.USD,GBP:r.GBP,EUR:r.EUR}; if(PCFG && PCFG.cur !== 'NGN' && (!PCFG.live || Math.abs(1/RATES[PCFG.cur]/PCFG.rate - 1) > 0.5)) pinRate(); repriceCart(); fmtCache = {};
     var d = new Date(t); rateDate = d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
     var want = lsGet(CUR_KEY);
     if(want && RATES[want]) curCode = want;
