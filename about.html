@@ -400,7 +400,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
       if(k !== 'NGN') RATES[k] = 1/rate;   // live mode: only the starting value until today's rate loads
     }catch(_){ P = null; }
   }
-  function fx(){ return P.live && RATES[P.cur] ? 1/RATES[P.cur] : P.rate; }
+  function fx(){ var live = P.live && RATES[P.cur] ? 1/RATES[P.cur] : 0; return live && Math.abs(live/P.rate - 1) <= 0.5 ? live : P.rate; }
   function tierNgn(k){ return P ? Math.round(P.tiers[k]*fx()) : DEF[k]; }
   function money(n){
     if(cur === 'NGN' || !RATES[cur]) return NG.format(n);
@@ -421,7 +421,9 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
       legal.textContent = 'Prices in '+CURS.filter(function(x){ return x[0] === cur; })[0][2]+(own ? '' : ', converted from naira');
     } else { note.hidden = true; legal.textContent = 'Prices in Nigerian naira'; }
   }
-  function cached(max){ try{ var o = JSON.parse(lsGet(RATE_KEY) || 'null'); if(o && o.rates && Date.now()-o.t < max) return o; }catch(_){} return null; }
+  function okRate(v){ return typeof v === 'number' && isFinite(v) && v > 1/30000 && v < 1/100; }
+  function validRates(r){ return !!r && okRate(r.USD) && okRate(r.GBP) && okRate(r.EUR); }
+  function cached(max){ try{ var o = JSON.parse(lsGet(RATE_KEY) || 'null'); if(o && typeof o.t === 'number' && validRates(o.rates) && Date.now()-o.t < max) return o; }catch(_){} return null; }
   function getJson(u){
     var ctl = ('AbortController' in window) ? new AbortController() : null, to = setTimeout(function(){ if(ctl) ctl.abort(); },7000);
     return fetch(u,{signal:ctl ? ctl.signal : undefined,cache:'no-store'}).then(function(r){ clearTimeout(to); if(!r.ok) throw 0; return r.json(); });
@@ -430,7 +432,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   function srcB(){ return getJson('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/ngn.json').then(function(d){ if(!d || !d.ngn) throw 0; return {USD:d.ngn.usd,GBP:d.ngn.gbp,EUR:d.ngn.eur}; }); }
   function setRates(r,t){
     RATES = {NGN:1,USD:r.USD,GBP:r.GBP,EUR:r.EUR}; fmt = {};
-    if(P && !P.live && P.cur !== 'NGN') RATES[P.cur] = 1/P.rate;
+    if(P && P.cur !== 'NGN' && (!P.live || Math.abs(1/RATES[P.cur]/P.rate - 1) > 0.5)) RATES[P.cur] = 1/P.rate;
     rateDate = new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
     var want = lsGet(CUR_KEY);
     if(want && RATES[want]) cur = want; else if(!want && !likelyNigeria() && RATES.USD){ cur = 'USD'; auto = true; }
@@ -439,7 +441,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   function loadRates(){
     var f = cached(FRESH); if(f){ setRates(f.rates,f.t); return; }
     srcA().catch(srcB).then(function(r){
-      if(!(r && r.USD > 0 && r.GBP > 0 && r.EUR > 0)) throw 0;
+      if(!validRates(r)) throw 0;
       lsSet(RATE_KEY,JSON.stringify({rates:r,t:Date.now()})); setRates(r,Date.now());
     }).catch(function(){ var o = cached(STALE); if(o) setRates(o.rates,o.t); else render(); });
   }
