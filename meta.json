@@ -11,7 +11,8 @@
   },
   "ajebo": {
     "g": "Afrobeats",
-    "bpm": 102
+    "bpm": 102,
+    "k": "C♯ minor"
   },
   "alone": {
     "g": "Afrobeats",
@@ -284,7 +285,8 @@
   },
   "gentle": {
     "g": "Afrobeats",
-    "bpm": 104
+    "bpm": 104,
+    "k": "C♯ minor"
   },
   "give-me-love": {
     "g": "Afrobeats",
