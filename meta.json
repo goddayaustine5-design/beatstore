@@ -18,12 +18,18 @@
   },
   "angela": {
     "g": "Afrobeats",
-    "bpm": 98
+    "bpm": 98,
+    "k": "E♭ minor"
   },
   "angelina": {
     "g": "Afrobeats",
     "bpm": 102,
     "k": "F minor"
+  },
+  "angelkeys": {
+    "g": "Afrobeats",
+    "bpm": 100,
+    "k": "D major"
   },
   "angelo": {
     "g": "Afrobeats",
@@ -68,7 +74,8 @@
   },
   "calm-down": {
     "g": "Afrobeats",
-    "bpm": 104
+    "bpm": 104,
+    "k": "D major"
   },
   "champion": {
     "g": "Afrobeats",
@@ -85,7 +92,8 @@
   },
   "classified": {
     "g": "Afrobeats",
-    "bpm": 98
+    "bpm": 98,
+    "k": "E♭ major"
   },
   "closer": {
     "g": "Afrobeats",
@@ -199,7 +207,8 @@
   },
   "fire-up": {
     "g": "Afrobeats",
-    "bpm": 104
+    "bpm": 104,
+    "k": "E♭ minor"
   },
   "flexy": {
     "g": "Afrobeats",
@@ -250,6 +259,11 @@
   "gloria": {
     "g": "Afrobeats",
     "bpm": 100
+  },
+  "goated": {
+    "g": "Amapiano",
+    "bpm": 112,
+    "k": "E♭ minor"
   },
   "gold-digger": {
     "g": "Afrobeats",
@@ -324,7 +338,8 @@
   },
   "jeje": {
     "g": "Afrobeats",
-    "bpm": 104
+    "bpm": 104,
+    "k": "E♭ minor"
   },
   "jiggy": {
     "g": "Afrobeats",
@@ -345,8 +360,9 @@
     "k": "C major"
   },
   "joy": {
-    "g": "Dancehall",
-    "bpm": 100
+    "g": "Afrobeats",
+    "bpm": 100,
+    "k": "D major"
   },
   "kala": {
     "g": "Afrobeats",
@@ -373,6 +389,11 @@
   "light": {
     "g": "Afrobeats",
     "bpm": 98
+  },
+  "lone": {
+    "g": "Afrobeats",
+    "bpm": 96,
+    "k": "E♭ minor"
   },
   "lonely-loner": {
     "g": "Afrobeats",
@@ -422,7 +443,8 @@
   },
   "mover": {
     "g": "Afrobeats",
-    "bpm": 104
+    "bpm": 104,
+    "k": "D major"
   },
   "moving": {
     "g": "Afrobeats",
@@ -571,7 +593,8 @@
   },
   "silver-spoon": {
     "g": "Afrobeats",
-    "bpm": 103
+    "bpm": 103,
+    "k": "E♭ minor"
   },
   "simplicity": {
     "g": "Afrobeats",
@@ -617,12 +640,18 @@
   },
   "tonight": {
     "g": "Afrobeats",
-    "bpm": 103
+    "bpm": 103,
+    "k": "E♭ minor"
   },
   "touch": {
     "g": "Afrobeats",
     "bpm": 99,
     "k": "B major"
+  },
+  "twinkling": {
+    "g": "Amapiano",
+    "bpm": 114,
+    "k": "D major"
   },
   "under": {
     "g": "Dancehall",
