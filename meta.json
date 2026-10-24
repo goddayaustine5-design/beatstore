@@ -3,6 +3,11 @@
     "g": "Afrobeats",
     "bpm": 94
   },
+  "density": {
+    "g": "Amapiano",
+    "bpm": 112,
+    "k": "G major"
+  },
   "for-you-2-0": {
     "g": "Amapiano",
     "bpm": 112,
