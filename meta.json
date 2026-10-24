@@ -43,7 +43,8 @@
   },
   "arewa": {
     "g": "Afrobeats",
-    "bpm": 100
+    "bpm": 100,
+    "k": "C♯ major"
   },
   "away": {
     "g": "Highlife",
@@ -127,7 +128,8 @@
   },
   "colobi": {
     "g": "Afrobeats",
-    "bpm": 108
+    "bpm": 108,
+    "k": "C♯ major"
   },
   "colour": {
     "g": "Amapiano",
@@ -145,6 +147,11 @@
   },
   "congo": {
     "g": "Afrobeats"
+  },
+  "control": {
+    "g": "Amapiano",
+    "bpm": 112,
+    "k": "D♭ minor"
   },
   "criminal": {
     "g": "Afrobeats",
@@ -274,7 +281,8 @@
   },
   "gloria": {
     "g": "Afrobeats",
-    "bpm": 100
+    "bpm": 100,
+    "k": "C♯ major"
   },
   "goated": {
     "g": "Amapiano",
@@ -284,6 +292,11 @@
   "gold-digger": {
     "g": "Afrobeats",
     "bpm": 98
+  },
+  "golden": {
+    "g": "Amapiano",
+    "bpm": 110,
+    "k": "D♭ minor"
   },
   "halima": {
     "g": "Afrobeats",
@@ -408,7 +421,8 @@
   },
   "light": {
     "g": "Afrobeats",
-    "bpm": 98
+    "bpm": 98,
+    "k": "C♯ major"
   },
   "location": {
     "g": "Amapiano",
@@ -592,11 +606,13 @@
   },
   "samantha": {
     "g": "Afrobeats",
-    "bpm": 100
+    "bpm": 100,
+    "k": "D♭ minor"
   },
   "save-me": {
     "g": "Afrobeats",
-    "bpm": 98
+    "bpm": 98,
+    "k": "D♭ minor"
   },
   "seed": {
     "g": "Afrobeats",
