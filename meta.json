@@ -135,7 +135,8 @@
   },
   "cold": {
     "g": "Afrobeats",
-    "bpm": 98
+    "bpm": 98,
+    "k": "F♯ major"
   },
   "colobi": {
     "g": "Afrobeats",
@@ -176,7 +177,8 @@
   },
   "cruise": {
     "g": "Afrobeats",
-    "bpm": 104
+    "bpm": 104,
+    "k": "A♭ minor"
   },
   "density": {
     "g": "Amapiano",
