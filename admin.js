@@ -503,6 +503,66 @@
     });
   }
 
+  /* ---- bulk genre and BPM ---- */
+  var BULK = null;
+  function bulkParse(text){
+    var lines = String(text).split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean), out = [], cand = '';
+    var skip = /^(public|private|published|draft|unpublished|scheduled|mp3|wav|rar\/zip|zip|stems|status|all|sort by|visibility|new to old|old to new)$/i;
+    lines.forEach(function(l){
+      var cs = /^([^,|]{1,60}?)\s*,\s*([^,]{2,24}?)\s*(?:,\s*(\d{2,3}|-|\u2014)?\s*)?$/.exec(l);
+      if(cs && !/BPM/i.test(l) && !/^\[/.test(l) && /[A-Za-z]/.test(cs[2]) && !/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/.test(l)){ out.push({raw:cs[1],genre:cleanGenre(cs[2]),bpm:cs[3] && /\d/.test(cs[3]) ? +cs[3] : NaN}); cand = ''; return; }
+      var bm = /(\d{2,3})\s*BPM/i.exec(l);
+      if(bm){ if(cand) out.push({raw:cand,bpm:+bm[1]}); cand = ''; return; }
+      var ml = /^\[(.+?)\]\(.*\)$/.exec(l);
+      if(ml){ cand = ml[1]; return; }
+      if(skip.test(l) || /^[\d\s.,]+$/.test(l) || /^[A-Z][a-z]{2} \d{1,2}, \d{4}$/.test(l) || l.length > 120) return;
+      if(/[A-Za-z]/.test(l)) cand = l;
+    });
+    return out;
+  }
+  function bulkCandidates(raw){
+    var c = [], q = /["\u201C]([^"\u201D]+)["\u201D]/.exec(raw);
+    if(q) c.push(q[1]);
+    var base = raw.replace(/["\u201C\u201D]/g,'').trim();
+    var toks = base.split(/\s+[-\u2013\u2014|]\s+|\s*[-_\u2013\u2014|]\s*(?=[A-Za-z0-9])/).map(function(x){ return x.trim(); }).filter(Boolean);
+    c.push(base);
+    for(var n=Math.min(3,toks.length);n>=1;n--) c.push(toks.slice(0,n).join(' '));
+    if(toks.length > 1) c.push(toks[toks.length-1]);   // "... type beat - Jiggy"
+    return c.filter(Boolean);
+  }
+  function bulkMatch(entries){
+    var bySlug = {}; S.list.forEach(function(t){ if(!S.removed[t]) bySlug[slug(t)] = t; });
+    var ok = [], bad = [], dup = [], seen = {};
+    entries.forEach(function(e){
+      var hit = null, cs = bulkCandidates(e.raw);
+      for(var i=0;i<cs.length && !hit;i++) hit = bySlug[slug(cs[i])] || null;
+      if(hit && !seen[hit]){ seen[hit] = 1; ok.push({t:hit,bpm:e.bpm,genre:e.genre,raw:e.raw}); }
+      else if(hit) dup.push(e); else bad.push(e);
+    });
+    return {ok:ok,bad:bad,dup:dup};
+  }
+  $('#bulkCheck').onclick = function(){
+    var entries = bulkParse($('#bulkText').value), res = bulkMatch(entries), out = $('#bulkOut'), g = cleanGenre($('#bulkGenre').value);
+    BULK = {res:res,genre:g}; $('#bulkApply').classList.toggle('hidden',!res.ok.length);
+    if(!entries.length){ say(out,'No beats with a BPM were found in that text. Paste the list including the lines that say "112 BPM".','err'); return; }
+    var msg = res.ok.length+' beat'+(res.ok.length===1?'':'s')+' found in your store'+(g ? ' (genre: '+g+')' : '')+':\n'+res.ok.map(function(x){ return x.t+(x.genre ? ' · '+x.genre : '')+' · '+(x.bpm>=40&&x.bpm<=300 ? x.bpm+' BPM' : 'no BPM'); }).join('\n');
+    if(res.dup.length) msg += '\n\nSame beat listed twice (only the first is used):\n'+res.dup.map(function(x){ return x.raw; }).join('\n');
+    if(res.bad.length) msg += '\n\nNot found in your store (nothing will be changed for these):\n'+res.bad.map(function(x){ return x.raw; }).join('\n');
+    say(out,msg,res.bad.length ? '' : 'ok');
+  };
+  $('#bulkApply').onclick = function(){
+    if(!BULK || !BULK.res.ok.length) return;
+    BULK.res.ok.forEach(function(x){
+      var s = slug(x.t), m = S.meta[s] || (S.meta[s] = {});
+      var gg = x.genre || BULK.genre; if(gg) m.g = gg;
+      if(x.bpm>=40 && x.bpm<=300) m.bpm = x.bpm;
+      if(!Object.keys(m).length) delete S.meta[s];
+    });
+    var n = BULK.res.ok.length; BULK = null; $('#bulkApply').classList.add('hidden');
+    render(); updateBar();
+    say($('#bulkOut'),'Applied to '+n+' beat'+(n===1?'':'s')+'. Press Publish changes at the bottom to make it live.','ok');
+  };
+
   /* ---- wiring ---- */
   $('#connect').onclick = function(){
     S.repo = $('#repo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/\/+$/,'');
