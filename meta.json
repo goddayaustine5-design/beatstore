@@ -379,7 +379,8 @@
   },
   "lead-way": {
     "g": "Afrobeats",
-    "bpm": 104
+    "bpm": 104,
+    "k": "A major"
   },
   "lemonade": {
     "g": "Afrobeats",
@@ -403,6 +404,11 @@
   "lonely-loner": {
     "g": "Afrobeats",
     "bpm": 102
+  },
+  "love-triangle": {
+    "g": "Afrobeats",
+    "bpm": 100,
+    "k": "A major"
   },
   "manchy": {
     "g": "Afrobeats",
@@ -506,7 +512,8 @@
   },
   "panic": {
     "g": "Afrobeats",
-    "bpm": 97
+    "bpm": 97,
+    "k": "A major"
   },
   "play": {
     "g": "Afrobeats",
@@ -545,7 +552,8 @@
   },
   "relief": {
     "g": "Afrobeats",
-    "bpm": 102
+    "bpm": 102,
+    "k": "A major"
   },
   "remember": {
     "g": "Afropop",
@@ -576,7 +584,8 @@
   },
   "seeker": {
     "g": "Afrobeats",
-    "bpm": 106
+    "bpm": 106,
+    "k": "A major"
   },
   "shiver": {
     "g": "Afrobeats",
