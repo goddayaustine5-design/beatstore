@@ -13,7 +13,8 @@
   },
   "amara": {
     "g": "Afrobeats",
-    "bpm": 102
+    "bpm": 102,
+    "k": "F♯ major"
   },
   "angela": {
     "g": "Afrobeats",
@@ -37,7 +38,8 @@
   },
   "aye": {
     "g": "Afrobeats",
-    "bpm": 102
+    "bpm": 102,
+    "k": "F♯ major"
   },
   "bigwiz": {
     "g": "Afrobeats",
@@ -45,7 +47,8 @@
   },
   "bounce": {
     "g": "Afrobeats",
-    "bpm": 106
+    "bpm": 106,
+    "k": "F♯ major"
   },
   "brave": {
     "g": "Afrobeats",
@@ -69,7 +72,8 @@
   },
   "charm": {
     "g": "Afrobeats",
-    "bpm": 94
+    "bpm": 94,
+    "k": "F♯ major"
   },
   "clara": {
     "g": "Afrobeats",
@@ -129,7 +133,8 @@
   },
   "desire": {
     "g": "Afrobeats",
-    "bpm": 104
+    "bpm": 104,
+    "k": "F♯ major"
   },
   "dosage": {
     "g": "Afrobeats",
@@ -142,7 +147,8 @@
   },
   "fallen": {
     "g": "Afrobeats",
-    "bpm": 98
+    "bpm": 98,
+    "k": "F major"
   },
   "fearless": {
     "g": "Afrobeats",
@@ -158,7 +164,8 @@
   },
   "fever": {
     "g": "Afrobeats",
-    "bpm": 104
+    "bpm": 104,
+    "k": "F♯ major"
   },
   "fidel": {
     "g": "Afrobeats",
@@ -195,7 +202,8 @@
   },
   "forever": {
     "g": "Afrobeats",
-    "bpm": 108
+    "bpm": 108,
+    "k": "F♯ major"
   },
   "gentle": {
     "g": "Afrobeats",
@@ -219,7 +227,8 @@
   },
   "happiness": {
     "g": "Afrobeats",
-    "bpm": 100
+    "bpm": 100,
+    "k": "F♯ major"
   },
   "heart-to-heart": {
     "g": "Afrobeats",
@@ -227,7 +236,8 @@
   },
   "hold-me-close": {
     "g": "Dancehall",
-    "bpm": 98
+    "bpm": 98,
+    "k": "F♯ major"
   },
   "hold-tight": {
     "g": "Afrobeats",
@@ -235,7 +245,8 @@
   },
   "hope": {
     "g": "Afrobeats",
-    "bpm": 102
+    "bpm": 102,
+    "k": "F♯ major"
   },
   "ijeoma": {
     "g": "Afrobeats",
@@ -332,7 +343,8 @@
   },
   "mira": {
     "g": "Afrobeats",
-    "bpm": 104
+    "bpm": 104,
+    "k": "F♯ major"
   },
   "monalisa": {
     "g": "Afrobeats",
@@ -340,7 +352,8 @@
   },
   "moon-light": {
     "g": "Dancehall",
-    "bpm": 100
+    "bpm": 100,
+    "k": "F♯ major"
   },
   "mover": {
     "g": "Afrobeats",
@@ -362,13 +375,19 @@
     "g": "Dancehall",
     "bpm": 97
   },
+  "night-2-night": {
+    "g": "Afrobeats",
+    "bpm": 102,
+    "k": "F♯ major"
+  },
   "nobody": {
     "g": "Afrobeats",
     "bpm": 104
   },
   "ole": {
     "g": "Afrobeats",
-    "bpm": 94
+    "bpm": 94,
+    "k": "F♯ major"
   },
   "on-my-mind": {
     "g": "Afrobeats",
@@ -389,7 +408,8 @@
   },
   "plenty-money": {
     "g": "Afrobeats",
-    "bpm": 110
+    "bpm": 110,
+    "k": "F♯ major"
   },
   "promise": {
     "g": "Afrobeats",
@@ -407,7 +427,8 @@
   },
   "regret": {
     "g": "Afro RnB",
-    "bpm": 98
+    "bpm": 98,
+    "k": "E minor"
   },
   "relief": {
     "g": "Afrobeats",
@@ -435,7 +456,8 @@
   },
   "seed": {
     "g": "Afrobeats",
-    "bpm": 97
+    "bpm": 97,
+    "k": "A major"
   },
   "seeker": {
     "g": "Afrobeats",
@@ -494,7 +516,8 @@
   },
   "time": {
     "g": "Afrobeats",
-    "bpm": 95
+    "bpm": 95,
+    "k": "F♯ major"
   },
   "tonight": {
     "g": "Afrobeats",
@@ -523,7 +546,8 @@
   },
   "willing": {
     "g": "Afrobeats",
-    "bpm": 92
+    "bpm": 92,
+    "k": "F♯ major"
   },
   "wine": {
     "g": "Afrobeats",
