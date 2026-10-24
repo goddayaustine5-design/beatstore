@@ -94,7 +94,8 @@
   },
   "champion": {
     "g": "Afrobeats",
-    "bpm": 106
+    "bpm": 106,
+    "k": "D minor"
   },
   "charm": {
     "g": "Afrobeats",
@@ -329,7 +330,8 @@
   },
   "hold-tight": {
     "g": "Afrobeats",
-    "bpm": 100
+    "bpm": 100,
+    "k": "B minor"
   },
   "hope": {
     "g": "Afrobeats",
@@ -448,7 +450,8 @@
   },
   "lonely-loner": {
     "g": "Afrobeats",
-    "bpm": 102
+    "bpm": 102,
+    "k": "D minor"
   },
   "love-triangle": {
     "g": "Afrobeats",
@@ -461,7 +464,8 @@
   },
   "manifest": {
     "g": "Afrobeats",
-    "bpm": 106
+    "bpm": 106,
+    "k": "D minor"
   },
   "maradona": {
     "g": "Afrobeats",
@@ -535,7 +539,8 @@
   },
   "nobody": {
     "g": "Afrobeats",
-    "bpm": 104
+    "bpm": 104,
+    "k": "B minor"
   },
   "ole": {
     "g": "Afrobeats",
@@ -678,7 +683,8 @@
   },
   "soso": {
     "g": "Afrobeats",
-    "bpm": 110
+    "bpm": 110,
+    "k": "B♭ minor"
   },
   "stranger": {
     "g": "Afrobeats",
