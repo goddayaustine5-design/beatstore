@@ -2,5 +2,10 @@
   "charm": {
     "g": "Afrobeats",
     "bpm": 94
+  },
+  "sideways": {
+    "g": "Afrobeats",
+    "bpm": 102,
+    "k": "F major"
   }
 }
