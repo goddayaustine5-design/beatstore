@@ -158,13 +158,20 @@
     "bpm": 98,
     "k": "F major"
   },
+  "fantasy": {
+    "g": "Amapiano",
+    "bpm": 108,
+    "k": "B major"
+  },
   "fearless": {
     "g": "Afrobeats",
-    "bpm": 102
+    "bpm": 102,
+    "k": "B major"
   },
   "feeling-2-0": {
     "g": "Afro RnB",
-    "bpm": 92
+    "bpm": 92,
+    "k": "B major"
   },
   "feeling-cold": {
     "g": "Afrobeats",
@@ -194,7 +201,8 @@
   },
   "folake": {
     "g": "Afrobeats",
-    "bpm": 100
+    "bpm": 100,
+    "k": "B major"
   },
   "follow-follow": {
     "g": "Afrobeats",
@@ -267,7 +275,13 @@
   },
   "imagination": {
     "g": "Afrobeats",
-    "bpm": 98
+    "bpm": 98,
+    "k": "B major"
+  },
+  "in-my-soul": {
+    "g": "Amapiano",
+    "bpm": 116,
+    "k": "B major"
   },
   "invasion": {
     "g": "Afrobeats",
@@ -437,7 +451,8 @@
   },
   "promise": {
     "g": "Afrobeats",
-    "bpm": 100
+    "bpm": 100,
+    "k": "B major"
   },
   "real": {
     "g": "Afrobeats",
@@ -464,7 +479,8 @@
   },
   "resonate": {
     "g": "Afrobeats",
-    "bpm": 102
+    "bpm": 102,
+    "k": "B major"
   },
   "revive": {
     "g": "Afrobeats",
@@ -551,7 +567,8 @@
   },
   "touch": {
     "g": "Afrobeats",
-    "bpm": 99
+    "bpm": 99,
+    "k": "B major"
   },
   "under": {
     "g": "Dancehall",
@@ -561,6 +578,11 @@
   "understand": {
     "g": "Afrobeats",
     "bpm": 98
+  },
+  "unstoppable": {
+    "g": "Amapiano",
+    "bpm": 114,
+    "k": "B major"
   },
   "wavy": {
     "g": "Afrobeats",
