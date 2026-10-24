@@ -571,6 +571,11 @@
     "bpm": 97,
     "k": "A major"
   },
+  "party-time": {
+    "g": "Afrobeats",
+    "bpm": 98,
+    "k": "D♭ major"
+  },
   "play": {
     "g": "Afrobeats",
     "bpm": 102,
