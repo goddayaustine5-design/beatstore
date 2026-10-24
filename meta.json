@@ -395,6 +395,11 @@
     "g": "Afrobeats",
     "bpm": 100
   },
+  "real": {
+    "g": "Afrobeats",
+    "bpm": 110,
+    "k": "A major"
+  },
   "reason": {
     "g": "Afrobeats",
     "bpm": 95,
