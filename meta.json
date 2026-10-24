@@ -295,6 +295,11 @@
     "g": "Afrobeats",
     "bpm": 96
   },
+  "italia": {
+    "g": "Afrobeats",
+    "bpm": 96,
+    "k": "F♯ minor"
+  },
   "janglova": {
     "g": "Afrobeats",
     "bpm": 100,
@@ -457,6 +462,11 @@
     "g": "Dancehall",
     "bpm": 102,
     "k": "F major"
+  },
+  "palava": {
+    "g": "Afrobeats",
+    "bpm": 100,
+    "k": "F♯ minor"
   },
   "panic": {
     "g": "Afrobeats",
