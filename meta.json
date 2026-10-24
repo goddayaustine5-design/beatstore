@@ -449,6 +449,11 @@
     "bpm": 102,
     "k": "G major"
   },
+  "playful": {
+    "g": "Amapiano",
+    "bpm": 112,
+    "k": "B major"
+  },
   "plenty-money": {
     "g": "Afrobeats",
     "bpm": 110,
@@ -565,6 +570,11 @@
     "g": "Afrobeats",
     "bpm": 95,
     "k": "F♯ major"
+  },
+  "toast": {
+    "g": "Afrobeats",
+    "bpm": 98,
+    "k": "B major"
   },
   "tonight": {
     "g": "Afrobeats",
