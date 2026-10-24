@@ -1,7 +1,8 @@
 {
   "addicted": {
     "g": "Afrobeats",
-    "bpm": 100
+    "bpm": 100,
+    "k": "C minor"
   },
   "afrika": {
     "g": "Amapiano",
@@ -248,7 +249,8 @@
   },
   "fly-away": {
     "g": "Afrobeats",
-    "bpm": 98
+    "bpm": 98,
+    "k": "C minor"
   },
   "folake": {
     "g": "Afrobeats",
