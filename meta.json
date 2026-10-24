@@ -34,7 +34,8 @@
   },
   "away": {
     "g": "Highlife",
-    "bpm": 163
+    "bpm": 163,
+    "k": "F♯ minor"
   },
   "aye": {
     "g": "Afrobeats",
@@ -95,7 +96,8 @@
   },
   "coaster": {
     "g": "Afrobeats",
-    "bpm": 98
+    "bpm": 98,
+    "k": "F♯ minor"
   },
   "codedly": {
     "g": "Afrobeats",
@@ -146,7 +148,8 @@
   },
   "dosage": {
     "g": "Afrobeats",
-    "bpm": 102
+    "bpm": 102,
+    "k": "F♯ minor"
   },
   "drip": {
     "g": "Afrobeats",
@@ -334,7 +337,8 @@
   },
   "kala": {
     "g": "Afrobeats",
-    "bpm": 102
+    "bpm": 102,
+    "k": "F♯ minor"
   },
   "kele": {
     "g": "Afrobeats",
@@ -350,7 +354,8 @@
   },
   "let-s-flow": {
     "g": "Afrobeats",
-    "bpm": 104
+    "bpm": 104,
+    "k": "F♯ minor"
   },
   "light": {
     "g": "Afrobeats",
@@ -383,7 +388,8 @@
   },
   "memories": {
     "g": "Afrobeats",
-    "bpm": 96
+    "bpm": 96,
+    "k": "F♯ minor"
   },
   "mira": {
     "g": "Afrobeats",
@@ -406,7 +412,8 @@
   },
   "moving": {
     "g": "Afrobeats",
-    "bpm": 100
+    "bpm": 100,
+    "k": "F♯ minor"
   },
   "my-brother": {
     "g": "Afrobeats",
@@ -443,7 +450,8 @@
   },
   "on-my-mind": {
     "g": "Afrobeats",
-    "bpm": 100
+    "bpm": 100,
+    "k": "F♯ minor"
   },
   "over": {
     "g": "Dancehall",
@@ -565,7 +573,8 @@
   },
   "take-my-pain": {
     "g": "Afrobeats",
-    "bpm": 102
+    "bpm": 102,
+    "k": "F♯ minor"
   },
   "tell-them": {
     "g": "Dancehall",
