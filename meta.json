@@ -14,7 +14,8 @@
   },
   "alone": {
     "g": "Afrobeats",
-    "bpm": 98
+    "bpm": 98,
+    "k": "G minor"
   },
   "amara": {
     "g": "Afrobeats",
@@ -81,6 +82,9 @@
     "bpm": 100,
     "k": "F major"
   },
+  "calling": {
+    "g": "114"
+  },
   "calm-down": {
     "g": "Afrobeats",
     "bpm": 104,
@@ -107,7 +111,8 @@
   },
   "closer": {
     "g": "Afrobeats",
-    "bpm": 100
+    "bpm": 100,
+    "k": "A minor"
   },
   "co-operate": {
     "g": "Afrobeats",
@@ -346,7 +351,8 @@
   },
   "invasion": {
     "g": "Afrobeats",
-    "bpm": 96
+    "bpm": 96,
+    "k": "A minor"
   },
   "italia": {
     "g": "Afrobeats",
@@ -360,7 +366,8 @@
   },
   "jara": {
     "g": "Afrobeats",
-    "bpm": 100
+    "bpm": 100,
+    "k": "A minor"
   },
   "jaye": {
     "g": "Afrobeats",
@@ -607,6 +614,11 @@
     "g": "Afrobeats",
     "bpm": 98,
     "k": "B♭ major"
+  },
+  "ride-on": {
+    "g": "Amapiano",
+    "bpm": 116,
+    "k": "A minor"
   },
   "samantha": {
     "g": "Afrobeats",
