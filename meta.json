@@ -231,7 +231,8 @@
   },
   "for-me": {
     "g": "Afro RnB",
-    "bpm": 92
+    "bpm": 92,
+    "k": "C major"
   },
   "for-you-2-0": {
     "g": "Amapiano",
@@ -536,7 +537,7 @@
   "regret": {
     "g": "Afro RnB",
     "bpm": 98,
-    "k": "E minor"
+    "k": "C major"
   },
   "relief": {
     "g": "Afrobeats",
@@ -602,7 +603,8 @@
   },
   "sinner": {
     "g": "Afrobeats",
-    "bpm": 100
+    "bpm": 100,
+    "k": "C major"
   },
   "soso": {
     "g": "Afrobeats",
