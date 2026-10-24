@@ -68,7 +68,8 @@
   },
   "brave": {
     "g": "Afrobeats",
-    "bpm": 104
+    "bpm": 104,
+    "k": "E minor"
   },
   "broken": {
     "g": "Afrobeats",
@@ -155,7 +156,8 @@
   },
   "criminal": {
     "g": "Afrobeats",
-    "bpm": 98
+    "bpm": 98,
+    "k": "E minor"
   },
   "crossfade": {
     "g": "Amapiano",
@@ -377,7 +379,8 @@
   },
   "jolo": {
     "g": "Afrobeats",
-    "bpm": 100
+    "bpm": 100,
+    "k": "E minor"
   },
   "jomo": {
     "g": "Afrobeats",
@@ -503,7 +506,8 @@
   },
   "my-business": {
     "g": "Afrobeats",
-    "bpm": 104
+    "bpm": 104,
+    "k": "E minor"
   },
   "my-pain": {
     "g": "Dancehall",
