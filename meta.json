@@ -22,7 +22,8 @@
   },
   "angelina": {
     "g": "Afrobeats",
-    "bpm": 102
+    "bpm": 102,
+    "k": "F minor"
   },
   "angelo": {
     "g": "Afrobeats",
@@ -57,7 +58,8 @@
   },
   "broken": {
     "g": "Afrobeats",
-    "bpm": 105
+    "bpm": 105,
+    "k": "F minor"
   },
   "bye": {
     "g": "Afrobeats",
@@ -201,7 +203,8 @@
   },
   "flexy": {
     "g": "Afrobeats",
-    "bpm": 94
+    "bpm": 94,
+    "k": "F minor"
   },
   "fly-away": {
     "g": "Afrobeats",
@@ -230,6 +233,11 @@
     "g": "Afrobeats",
     "bpm": 108,
     "k": "F♯ major"
+  },
+  "forgive": {
+    "g": "Amapiano",
+    "bpm": 112,
+    "k": "F minor"
   },
   "gentle": {
     "g": "Afrobeats",
@@ -389,7 +397,8 @@
   },
   "mean": {
     "g": "Afrobeats",
-    "bpm": 100
+    "bpm": 100,
+    "k": "F minor"
   },
   "memories": {
     "g": "Afrobeats",
@@ -588,7 +597,8 @@
   },
   "tell-them": {
     "g": "Dancehall",
-    "bpm": 102
+    "bpm": 102,
+    "k": "F minor"
   },
   "the-sky": {
     "g": "Afrobeats",
@@ -635,7 +645,8 @@
   },
   "why": {
     "g": "Afrobeats",
-    "bpm": 104
+    "bpm": 104,
+    "k": "F minor"
   },
   "willing": {
     "g": "Afrobeats",
@@ -659,7 +670,8 @@
   },
   "yaba": {
     "g": "Dancehall",
-    "bpm": 104
+    "bpm": 104,
+    "k": "F minor"
   },
   "yolo": {
     "g": "Afrobeats",
