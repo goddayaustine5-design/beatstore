@@ -1,27 +1,438 @@
 {
+  "addicted": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "ajebo": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "alone": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "amara": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "angela": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "angelina": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "angelo": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "arewa": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "away": {
+    "g": "Highlife",
+    "bpm": 163
+  },
+  "aye": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "bigwiz": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "bounce": {
+    "g": "Afrobeats",
+    "bpm": 106
+  },
+  "brave": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "broken": {
+    "g": "Afrobeats",
+    "bpm": 105
+  },
+  "bye": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "calm-down": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "champion": {
+    "g": "Afrobeats",
+    "bpm": 106
+  },
   "charm": {
     "g": "Afrobeats",
     "bpm": 94
+  },
+  "clara": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "classified": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "closer": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "co-operate": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "coaster": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "codedly": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "cold": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "colobi": {
+    "g": "Afrobeats",
+    "bpm": 108
+  },
+  "comply": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "confirmation": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "congo": {
+    "g": "Afrobeats"
+  },
+  "criminal": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "cruise": {
+    "g": "Afrobeats",
+    "bpm": 104
   },
   "density": {
     "g": "Amapiano",
     "bpm": 112,
     "k": "G major"
   },
+  "desire": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "dosage": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "drip": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "fallen": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "fearless": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "feeling-2-0": {
+    "g": "Afro RnB",
+    "bpm": 92
+  },
+  "feeling-cold": {
+    "g": "Afrobeats",
+    "bpm": 106
+  },
+  "fever": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "fidel": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "fire-up": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "flexy": {
+    "g": "Afrobeats",
+    "bpm": 94
+  },
+  "fly-away": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "folake": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "follow-follow": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "for-me": {
+    "g": "Afro RnB",
+    "bpm": 92
+  },
   "for-you-2-0": {
     "g": "Amapiano",
     "bpm": 112,
     "k": "E major"
+  },
+  "forever": {
+    "g": "Afrobeats",
+    "bpm": 108
+  },
+  "gentle": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "give-me-love": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "gloria": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "gold-digger": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "halima": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "happiness": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "heart-to-heart": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "hold-me-close": {
+    "g": "Dancehall",
+    "bpm": 98
+  },
+  "hold-tight": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "hope": {
+    "g": "Afrobeats",
+    "bpm": 102
   },
   "ijeoma": {
     "g": "Afrobeats",
     "bpm": 125,
     "k": "F♯ major"
   },
+  "imagination": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "invasion": {
+    "g": "Afrobeats",
+    "bpm": 96
+  },
+  "janglova": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "jara": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "jeje": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "jiggy": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "jolo": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "jomo": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "joy": {
+    "g": "Dancehall",
+    "bpm": 100
+  },
+  "kala": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "kele": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "lead-way": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "lemonade": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "let-s-flow": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "light": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "lonely-loner": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "manchy": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "manifest": {
+    "g": "Afrobeats",
+    "bpm": 106
+  },
+  "maradona": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "mars": {
+    "g": "Dancehall",
+    "bpm": 98
+  },
+  "mean": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "memories": {
+    "g": "Afrobeats",
+    "bpm": 96
+  },
+  "mira": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "monalisa": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "moon-light": {
+    "g": "Dancehall",
+    "bpm": 100
+  },
+  "mover": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "moving": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "my-brother": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "my-business": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "my-pain": {
+    "g": "Dancehall",
+    "bpm": 97
+  },
+  "nobody": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "ole": {
+    "g": "Afrobeats",
+    "bpm": 94
+  },
+  "on-my-mind": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
   "over": {
     "g": "Dancehall",
     "bpm": 102,
     "k": "F major"
+  },
+  "panic": {
+    "g": "Afrobeats",
+    "bpm": 97
+  },
+  "play": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "plenty-money": {
+    "g": "Afrobeats",
+    "bpm": 110
+  },
+  "promise": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "reason": {
+    "g": "Afrobeats",
+    "bpm": 95
+  },
+  "regret": {
+    "g": "Afro RnB",
+    "bpm": 98
+  },
+  "relief": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "remember": {
+    "g": "Afropop",
+    "bpm": 100
+  },
+  "resonate": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "revive": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "samantha": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "save-me": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "seed": {
+    "g": "Afrobeats",
+    "bpm": 97
+  },
+  "seeker": {
+    "g": "Afrobeats",
+    "bpm": 106
   },
   "shiver": {
     "g": "Afrobeats",
@@ -33,9 +444,93 @@
     "bpm": 102,
     "k": "F major"
   },
+  "signal": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "silver": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "silver-spoon": {
+    "g": "Afrobeats",
+    "bpm": 103
+  },
+  "simplicity": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "sinner": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "soso": {
+    "g": "Afrobeats",
+    "bpm": 110
+  },
+  "take-my-pain": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "tell-them": {
+    "g": "Dancehall",
+    "bpm": 102
+  },
+  "the-sky": {
+    "g": "Afrobeats",
+    "bpm": 102
+  },
+  "time": {
+    "g": "Afrobeats",
+    "bpm": 95
+  },
+  "tonight": {
+    "g": "Afrobeats",
+    "bpm": 103
+  },
+  "touch": {
+    "g": "Afrobeats",
+    "bpm": 99
+  },
   "under": {
     "g": "Dancehall",
     "bpm": 102,
     "k": "F major"
+  },
+  "understand": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "wavy": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "why": {
+    "g": "Afrobeats",
+    "bpm": 104
+  },
+  "willing": {
+    "g": "Afrobeats",
+    "bpm": 92
+  },
+  "wine": {
+    "g": "Afrobeats",
+    "bpm": 106
+  },
+  "with-you": {
+    "g": "Afrobeats",
+    "bpm": 98
+  },
+  "woman": {
+    "g": "Afrobeats",
+    "bpm": 100
+  },
+  "yaba": {
+    "g": "Dancehall",
+    "bpm": 104
+  },
+  "yolo": {
+    "g": "Afrobeats",
+    "bpm": 102
   }
 }
