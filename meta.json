@@ -475,6 +475,11 @@
     "g": "Afrobeats",
     "bpm": 110
   },
+  "stranger": {
+    "g": "Afrobeats",
+    "bpm": 97,
+    "k": "F major"
+  },
   "take-my-pain": {
     "g": "Afrobeats",
     "bpm": 102
