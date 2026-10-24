@@ -140,6 +140,20 @@ input.bad{border-color:var(--bad)!important}
       <div id="prMsg" class="msg"></div>
     </section>
 
+    <section class="card" id="bulkCard">
+      <h2>Fill in genre and BPM from a list</h2>
+      <details>
+        <summary>Paste a list of beats with their BPM (for example copied from BeatStars)</summary>
+        <p class="hint" style="margin:10px 0 0">Paste the whole list as it is. Each beat name is matched to a beat in your store, and the BPM that follows it is picked up. Nothing is changed until you press Apply, and nothing goes live until you press Publish changes.</p>
+        <label for="bulkText">The list</label>
+        <textarea id="bulkText" rows="6" spellcheck="false" style="width:100%;background:#0f1116;color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit"></textarea>
+        <label for="bulkGenre">Genre for these beats (optional)</label>
+        <input id="bulkGenre" type="text" list="genreList" maxlength="24" autocomplete="off" placeholder="e.g. Amapiano" style="max-width:260px">
+        <div class="row" style="margin-top:12px"><button id="bulkCheck" type="button">Check list</button><button id="bulkApply" type="button" class="primary hidden">Apply</button></div>
+        <div id="bulkOut" class="msg"></div>
+      </details>
+    </section>
+
     <section class="card">
       <h2>Your beats <span class="hint" id="count"></span></h2>
       <datalist id="genreList"></datalist>
