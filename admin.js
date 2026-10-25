@@ -11,7 +11,7 @@
   function lsDel(k){ try{ localStorage.removeItem(k); }catch(_){} }
   function say(el,text,cls){ el.textContent = text||''; el.className = 'msg'+(cls?' '+cls:''); }
 
-  var S = { sel:{}, lastSel:null, vis:[], meta:{}, metaLoaded:{}, metaText:null, metaBase:'', pr:null, prBase:'', prText:null, prOpen:{}, repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
+  var S = { sel:Object.create(null), lastSel:null, vis:[], meta:{}, metaLoaded:{}, metaText:null, metaBase:'', pr:null, prBase:'', prText:null, prOpen:{}, repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
   // S.list = working order of titles. S.files[title] = File for new/replaced previews. S.removed[title] = true.
 
   function gh(method,path,body,accept){
@@ -545,7 +545,7 @@
     S.vis.forEach(function(t){ if(S.removed[t]) return; if(on) S.sel[t] = true; else delete S.sel[t]; });
     paintSel();
   };
-  $('#selClear').onclick = function(){ S.sel = {}; S.lastSel = null; say($('#selMsg'),''); paintSel(); };
+  $('#selClear').onclick = function(){ S.sel = Object.create(null); S.lastSel = null; say($('#selMsg'),''); paintSel(); };
   function moveSel(top){
     var g = selTitles(); if(!g.length) return;
     var rest = S.list.filter(function(t){ return g.indexOf(t)<0; });
@@ -575,6 +575,7 @@
   $('#bmApply').onclick = function(){
     var g = selTitles(), genre = cleanGenre($('#bmGenre').value), raw = $('#bmBpm').value.trim(), key = $('#bmKey').value, bpm = NaN;
     if(raw){ bpm = /^\d{2,3}$/.test(raw) ? +raw : NaN; if(!(bpm>=40 && bpm<=300)){ say($('#selMsg'),'BPM should be a whole number from 40 to 300.','err'); return; } }
+    if(key && KEYS.indexOf(key)<0){ say($('#selMsg'),'That key is not on the list.','err'); return; }
     if(!genre && !raw && !key){ say($('#selMsg'),'Fill in a genre, a BPM or a key first.','err'); return; }
     g.forEach(function(t){
       var s = slug(t), m = S.meta[s] || (S.meta[s] = {});
@@ -750,7 +751,7 @@
   $('#addBtn').onclick = commitQueue;
   $('#filter').oninput = render;
   $('#publish').onclick = publish;
-  $('#discard').onclick = function(){ S.list = S.original.slice(); S.files = {}; S.removed = {}; S.sel = {}; S.lastSel = null; S.pr = JSON.parse(JSON.stringify(S.prLoaded)); S.meta = JSON.parse(JSON.stringify(S.metaLoaded)); S.prBad = {}; S.prOpen = {}; renderPrices(); render(); say($('#addMsg'),''); say($('#prMsg'),''); };
+  $('#discard').onclick = function(){ S.list = S.original.slice(); S.files = {}; S.removed = {}; S.sel = Object.create(null); S.lastSel = null; S.pr = JSON.parse(JSON.stringify(S.prLoaded)); S.meta = JSON.parse(JSON.stringify(S.metaLoaded)); S.prBad = {}; S.prOpen = {}; renderPrices(); render(); say($('#addMsg'),''); say($('#prMsg'),''); };
   window.addEventListener('beforeunload',function(e){ if(!$('#bar').classList.contains('hidden')){ e.preventDefault(); e.returnValue = ''; } });
 
   try{
