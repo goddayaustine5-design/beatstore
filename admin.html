@@ -35,7 +35,20 @@ button.danger{color:var(--bad)}
 .q .fn{grid-column:1/-1;color:var(--muted);font-size:.78rem;word-break:break-all}
 .pos label{display:inline-flex;gap:6px;align-items:center;margin:0 16px 0 0;color:var(--fg);font-size:.95rem}
 .list{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:10px}
-.b{display:grid;grid-template-columns:34px 1fr auto auto;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line)}
+.b{display:grid;grid-template-columns:26px 24px 30px 1fr auto auto;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);user-select:none;-webkit-user-select:none}
+.b input[type=text],.b select{user-select:text;-webkit-user-select:text}
+.b.sel{background:#1a1730}
+.b.dragging{opacity:.45}
+.b.drop-before{box-shadow:0 -3px 0 var(--accent)}
+.b.drop-after{box-shadow:0 3px 0 var(--accent)}
+.grip{cursor:grab;touch-action:none;background:none;border:0;color:var(--muted);padding:6px 2px;font-size:1.15rem;line-height:1;letter-spacing:-2px;border-radius:6px}
+.grip:hover,.grip:focus-visible{color:var(--fg);background:#1b1e26}
+.grip:active{cursor:grabbing}
+.b input[type=checkbox],.selbar input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);margin:0;cursor:pointer}
+.selbar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin:12px 0 8px}
+.selbar label{display:inline-flex;gap:8px;align-items:center;margin:0;color:var(--fg);font-size:.92rem;cursor:pointer}
+.selpanel{background:#0f1116;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+@media(max-width:640px){.b{grid-template-columns:26px 24px 1fr}.b .n{display:none}.b .tg,.b .act{grid-column:2/-1}}
 .b:last-child{border-bottom:0}
 .b .n{color:var(--muted);font:500 .8rem ui-monospace,monospace}
 .b .t{font-weight:600;word-break:break-word}
@@ -109,7 +122,9 @@ input.bad{border-color:var(--bad)!important}
 
     <section class="card" id="priceCard">
       <h2>Prices and offers</h2>
-      <div class="row">
+      <details>
+        <summary>Set the prices for all beats and the Exclusive offer range</summary>
+      <div class="row" style="margin-top:10px">
         <label for="prCur" style="margin:0">I set my prices in</label>
         <select id="prCur"><option value="NGN">Naira (₦)</option><option value="USD">US Dollar ($)</option><option value="GBP">British Pound (£)</option><option value="EUR">Euro (€)</option></select>
       </div>
@@ -138,6 +153,7 @@ input.bad{border-color:var(--bad)!important}
       </div>
       <p class="hint" style="margin:10px 0 0">These prices apply to every beat. To give one beat its own price, or to set its genre and BPM, use the Edit button on that beat below. Nothing goes live until you press Publish changes.</p>
       <div id="prMsg" class="msg"></div>
+      </details>
     </section>
 
     <section class="card" id="bulkCard">
@@ -158,8 +174,35 @@ input.bad{border-color:var(--bad)!important}
       <h2>Your beats <span class="hint" id="count"></span></h2>
       <datalist id="genreList"></datalist>
       <input id="filter" type="search" placeholder="Search your beats…" autocomplete="off">
-      <div id="list" class="list" style="margin-top:12px"></div>
-      <p class="hint">"Top" moves a beat to the top of page 1. "Remove" takes it off the site (and its preview file when you publish).</p>
+      <div class="selbar">
+        <label><input type="checkbox" id="selAll"> <span id="selAllL">Select all</span></label>
+        <span class="hint" id="selCount"></span>
+        <span class="row hidden" id="selActs">
+          <button class="small" id="selTop" type="button">Move to top</button>
+          <button class="small" id="selBottom" type="button">Move to bottom</button>
+          <button class="small" id="selMetaBtn" type="button">Genre, BPM, key…</button>
+          <button class="small" id="selPriceBtn" type="button">Prices…</button>
+          <button class="small danger" id="selRemove" type="button">Remove</button>
+          <button class="small" id="selClear" type="button">Clear selection</button>
+        </span>
+      </div>
+      <div id="selMetaP" class="selpanel hidden">
+        <div class="hint">Fill in only what you want to change. Empty boxes are left as they are.</div>
+        <div class="pr" style="margin-top:8px">
+          <div><label for="bmGenre">Genre</label><input id="bmGenre" type="text" list="genreList" maxlength="24" autocomplete="off" placeholder="e.g. Afrobeats"></div>
+          <div><label for="bmBpm">BPM</label><input id="bmBpm" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 100"></div>
+          <div><label for="bmKey">Key</label><select id="bmKey" style="width:100%"></select></div>
+        </div>
+        <div class="row" style="margin-top:10px"><button class="primary small" id="bmApply" type="button">Apply</button><button class="small" id="bmCancel" type="button">Cancel</button></div>
+      </div>
+      <div id="selPriceP" class="selpanel hidden">
+        <div class="hint">Give the selected beats their own price. Empty boxes are left as they are.</div>
+        <div class="pr" id="bpGrid" style="margin-top:8px"></div>
+        <div class="row" style="margin-top:10px"><button class="primary small" id="bpApply" type="button">Set these prices</button><button class="small" id="bpStd" type="button">Use the standard prices</button><button class="small" id="bpCancel" type="button">Cancel</button></div>
+      </div>
+      <div id="selMsg" class="msg" style="margin:0 0 8px"></div>
+      <div id="list" class="list"></div>
+      <p class="hint">Drag the ⋮⋮ handle to move a beat (drag a selected beat to move all selected beats together). On a keyboard, focus the handle and press the up or down arrow. Tick the boxes (or hold Ctrl or Shift and click a row) to change several beats at once. "Remove" takes a beat off the site, and deletes its preview file when you publish.</p>
     </section>
   </div>
 </div>

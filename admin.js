@@ -11,7 +11,7 @@
   function lsDel(k){ try{ localStorage.removeItem(k); }catch(_){} }
   function say(el,text,cls){ el.textContent = text||''; el.className = 'msg'+(cls?' '+cls:''); }
 
-  var S = { meta:{}, metaLoaded:{}, metaText:null, metaBase:'', pr:null, prBase:'', prText:null, prOpen:{}, repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
+  var S = { sel:{}, lastSel:null, vis:[], meta:{}, metaLoaded:{}, metaText:null, metaBase:'', pr:null, prBase:'', prText:null, prOpen:{}, repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
   // S.list = working order of titles. S.files[title] = File for new/replaced previews. S.removed[title] = true.
 
   function gh(method,path,body,accept){
@@ -317,24 +317,35 @@
   function render(){
     var q = $('#filter').value.trim().toLowerCase(), box = $('#list');
     box.textContent = '';
-    var shown = 0;
+    var shown = 0; S.vis = [];
+    Object.keys(S.sel).forEach(function(k){ if(S.list.indexOf(k)<0 || S.removed[k]) delete S.sel[k]; });
     S.list.forEach(function(t,i){
       if(q && t.toLowerCase().indexOf(q)<0) return;
       shown++;
-      var row = document.createElement('div'); row.className = 'b'+(S.removed[t]?' removed':'');
+      var row = document.createElement('div'); row.className = 'b'+(S.removed[t]?' removed':'')+(S.sel[t]&&!S.removed[t]?' sel':''); row.setAttribute('data-t',t);
+      S.vis.push(t);
+      var gr = document.createElement('span'), ck = document.createElement('span');
+      if(!S.removed[t]){
+        var g = document.createElement('button'); g.type = 'button'; g.className = 'grip'; g.textContent = '\u22EE\u22EE'; g.setAttribute('aria-label','Move '+t+'. Drag, or press the up or down arrow.'); g.title = 'Drag to reorder';
+        g.addEventListener('pointerdown',function(e){ startDrag(e,t,g); });
+        g.addEventListener('keydown',function(e){ if(e.key==='ArrowUp'||e.key==='ArrowDown'){ e.preventDefault(); nudge(t,e.key==='ArrowUp'?-1:1); } });
+        gr.appendChild(g);
+        var c = document.createElement('input'); c.type = 'checkbox'; c.checked = !!S.sel[t]; c.setAttribute('aria-label','Select '+t);
+        c.addEventListener('click',function(e){ pickRow(t,c.checked,e.shiftKey); });
+        ck.appendChild(c);
+      }
       var n = document.createElement('span'); n.className = 'n'; n.textContent = i+1;
       var name = document.createElement('span'); name.className = 't'; name.textContent = t;
       var ml = document.createElement('div'); ml.className = 'hint mline'; ml.style.fontWeight = '400'; ml.textContent = metaLine(t); name.appendChild(ml);
-      var tags = document.createElement('span');
+      var tags = document.createElement('span'); tags.className = 'tg';
       var isNew = S.original.indexOf(t)<0, st = S.files[t] ? 'new' : previewState(t);
       var tag = document.createElement('span'); tag.className = 'tag '+(st==='ok'?'ok':st==='case'?'warn':st==='new'?'new':'bad');
       tag.textContent = st==='ok' ? 'preview ✓' : st==='case' ? 'file name case' : st==='new' ? (isNew?'new · ':'')+'preview ready' : 'no preview';
       if(st==='case') tag.title = 'The file exists but its name has capital letters. Rename it to '+slug(t)+'.mp3';
       tags.appendChild(tag);
       var sg = slug(t), cp = document.createElement('span'); cp.className = 'tag cp'+(S.pr.beats[sg] && Object.keys(S.pr.beats[sg]).length ? '' : ' hidden'); cp.textContent = 'own price'; cp.style.marginLeft = '6px'; tags.appendChild(cp);
-      var act = document.createElement('span'); act.className = 'row';
+      var act = document.createElement('span'); act.className = 'row act';
       if(!S.removed[t]){
-        if(i>0){ var up = document.createElement('button'); up.className = 'small'; up.textContent = 'Top'; up.onclick = function(){ moveTop(t); }; act.appendChild(up); }
         var pb = document.createElement('button'); pb.className = 'small'; pb.textContent = 'Edit'; pb.setAttribute('aria-expanded',!!S.prOpen[t]);
         pb.onclick = function(){ S.prOpen[t] = !S.prOpen[t]; render(); };
         act.appendChild(pb);
@@ -342,14 +353,20 @@
       } else {
         var un = document.createElement('button'); un.className = 'small'; un.textContent = 'Undo'; un.onclick = function(){ delete S.removed[t]; render(); }; act.appendChild(un);
       }
-      row.appendChild(n); row.appendChild(name); row.appendChild(tags); row.appendChild(act);
+      row.appendChild(gr); row.appendChild(ck); row.appendChild(n); row.appendChild(name); row.appendChild(tags); row.appendChild(act);
+      row.addEventListener('mousedown',function(e){ if(e.shiftKey && !e.target.closest('input,select,textarea')) e.preventDefault(); });
+      row.addEventListener('click',function(e){
+        if(S.removed[t] || e.target.closest('button,input,select,textarea,a,.ed')) return;
+        if(e.shiftKey) pickRow(t,true,true); else if(e.ctrlKey || e.metaKey) pickRow(t,!S.sel[t],false);
+      });
       if(S.prOpen[t] && !S.removed[t]){ row.classList.add('has-ed'); row.appendChild(buildEditor(t)); }
       box.appendChild(row);
     });
     if(!shown){ var e = document.createElement('p'); e.className = 'hint'; e.style.padding = '12px'; e.textContent = 'Nothing matches.'; box.appendChild(e); }
     var live = S.list.filter(function(t){ return !S.removed[t]; }).length;
     $('#count').textContent = '· '+live+' beats';
-    updateEq(); updateBar();
+    if(S.focusT){ var fr = box.querySelectorAll('.b'); for(var z=0;z<fr.length;z++) if(fr[z].getAttribute('data-t')===S.focusT){ var fg = fr[z].querySelector('.grip'); if(fg) fg.focus(); break; } S.focusT = null; }
+    paintSel(); updateEq(); updateBar();
   }
 
   function updateBar(){
@@ -365,7 +382,6 @@
     $('#pending').textContent = parts.join(' · ');
   }
 
-  function moveTop(t){ var i = S.list.indexOf(t); if(i>0){ S.list.splice(i,1); S.list.unshift(t); render(); } }
   function remove(t){
     if(S.original.indexOf(t)<0){ var i = S.list.indexOf(t); S.list.splice(i,1); delete S.files[t]; }
     else S.removed[t] = true;
@@ -503,6 +519,153 @@
     });
   }
 
+  /* ---- selecting several beats ---- */
+  function selTitles(){ return S.list.filter(function(t){ return S.sel[t] && !S.removed[t]; }); }
+  function pickRow(t,on,range){
+    if(range && S.lastSel && S.vis.indexOf(S.lastSel)>=0 && S.vis.indexOf(t)>=0){
+      var a = S.vis.indexOf(S.lastSel), b = S.vis.indexOf(t), lo = Math.min(a,b), hi = Math.max(a,b);
+      for(var i=lo;i<=hi;i++) if(!S.removed[S.vis[i]]) S.sel[S.vis[i]] = true;
+    } else if(on) S.sel[t] = true; else delete S.sel[t];
+    S.lastSel = t; paintSel();
+  }
+  function paintSel(){
+    document.querySelectorAll('#list .b').forEach(function(r){
+      var t = r.getAttribute('data-t'), on = !!S.sel[t] && !S.removed[t], c = r.querySelector('input[type=checkbox]');
+      r.classList.toggle('sel',on); if(c) c.checked = on;
+    });
+    var n = selTitles().length, vis = S.vis.filter(function(t){ return !S.removed[t]; }), inVis = vis.filter(function(t){ return S.sel[t]; }).length, all = $('#selAll');
+    all.checked = vis.length>0 && inVis===vis.length; all.indeterminate = inVis>0 && inVis<vis.length;
+    $('#selAllL').textContent = $('#filter').value.trim() ? 'Select all shown' : 'Select all';
+    $('#selCount').textContent = n ? n+' selected' : '';
+    $('#selActs').classList.toggle('hidden',!n);
+    if(!n){ $('#selMetaP').classList.add('hidden'); $('#selPriceP').classList.add('hidden'); }
+  }
+  $('#selAll').onchange = function(){
+    var on = this.checked;
+    S.vis.forEach(function(t){ if(S.removed[t]) return; if(on) S.sel[t] = true; else delete S.sel[t]; });
+    paintSel();
+  };
+  $('#selClear').onclick = function(){ S.sel = {}; S.lastSel = null; say($('#selMsg'),''); paintSel(); };
+  function moveSel(top){
+    var g = selTitles(); if(!g.length) return;
+    var rest = S.list.filter(function(t){ return g.indexOf(t)<0; });
+    S.list = top ? g.concat(rest) : rest.concat(g);
+    say($('#selMsg'),g.length+' beat'+(g.length>1?'s':'')+' moved to the '+(top?'top':'bottom')+', keeping their order. Nothing is live until you press Publish changes.','ok');
+    render();
+  }
+  $('#selTop').onclick = function(){ moveSel(true); };
+  $('#selBottom').onclick = function(){ moveSel(false); };
+  $('#selRemove').onclick = function(){
+    var g = selTitles(); if(!g.length) return;
+    if(!confirm('Remove '+g.length+' beat'+(g.length>1?'s':'')+' from your list? You can still undo before publishing.')) return;
+    g.forEach(function(t){ delete S.sel[t]; remove(t); });
+    say($('#selMsg'),g.length+' beat'+(g.length>1?'s':'')+' marked for removal. Press Undo on a beat to bring it back, or Publish changes to confirm.','ok');
+  };
+  // genre, BPM and key for the selection
+  (function(){
+    var ks = $('#bmKey'), none = document.createElement('option'); none.value = ''; none.textContent = 'Leave as it is'; ks.appendChild(none);
+    ['major','minor'].forEach(function(mode){
+      var og = document.createElement('optgroup'); og.label = mode.charAt(0).toUpperCase()+mode.slice(1);
+      KEYS.filter(function(x){ return x.slice(-mode.length) === mode; }).forEach(function(x){ var o = document.createElement('option'); o.value = x; o.textContent = x; og.appendChild(o); });
+      ks.appendChild(og);
+    });
+  })();
+  $('#selMetaBtn').onclick = function(){ $('#selPriceP').classList.add('hidden'); $('#selMetaP').classList.toggle('hidden'); say($('#selMsg'),''); };
+  $('#bmCancel').onclick = function(){ $('#selMetaP').classList.add('hidden'); };
+  $('#bmApply').onclick = function(){
+    var g = selTitles(), genre = cleanGenre($('#bmGenre').value), raw = $('#bmBpm').value.trim(), key = $('#bmKey').value, bpm = NaN;
+    if(raw){ bpm = /^\d{2,3}$/.test(raw) ? +raw : NaN; if(!(bpm>=40 && bpm<=300)){ say($('#selMsg'),'BPM should be a whole number from 40 to 300.','err'); return; } }
+    if(!genre && !raw && !key){ say($('#selMsg'),'Fill in a genre, a BPM or a key first.','err'); return; }
+    g.forEach(function(t){
+      var s = slug(t), m = S.meta[s] || (S.meta[s] = {});
+      if(genre) m.g = genre; if(raw) m.bpm = bpm; if(key) m.k = key;
+    });
+    $('#bmGenre').value = ''; $('#bmBpm').value = ''; $('#bmKey').value = ''; $('#selMetaP').classList.add('hidden');
+    say($('#selMsg'),'Updated '+g.length+' beat'+(g.length>1?'s':'')+'. Nothing is live until you press Publish changes.','ok');
+    render();
+  };
+  // prices for the selection
+  $('#selPriceBtn').onclick = function(){
+    $('#selMetaP').classList.add('hidden'); var p = $('#selPriceP'); p.classList.toggle('hidden'); say($('#selMsg'),'');
+    if(p.classList.contains('hidden')) return;
+    var gridEl = $('#bpGrid'); gridEl.textContent = '';
+    TIERS.forEach(function(name,k){
+      var w = document.createElement('div'), l = document.createElement('label'), i = document.createElement('input');
+      l.textContent = name+' ('+SYM[S.pr.cur]+')'; i.type = 'text'; i.setAttribute('inputmode','decimal'); i.autocomplete = 'off'; i.id = 'bp'+k;
+      i.placeholder = S.pr.tiers[k]>0 ? 'Standard '+fmt(S.pr.tiers[k],S.pr.cur) : 'Standard';
+      w.appendChild(l); w.appendChild(i); gridEl.appendChild(w);
+    });
+  };
+  $('#bpCancel').onclick = function(){ $('#selPriceP').classList.add('hidden'); };
+  $('#bpApply').onclick = function(){
+    var g = selTitles(), vals = {}, any = false, bad = false;
+    TIERS.forEach(function(name,k){
+      var el = $('#bp'+k), raw = el ? el.value.trim() : ''; if(!raw){ if(el) el.classList.remove('bad'); return; }
+      var v = parseMoney(raw,S.pr.cur); if(isNaN(v)){ bad = true; el.classList.add('bad'); } else { el.classList.remove('bad'); vals[k] = v; any = true; }
+    });
+    if(bad){ say($('#selMsg'),'One of the prices is not a valid number.','err'); return; }
+    if(!any){ say($('#selMsg'),'Type at least one price first.','err'); return; }
+    g.forEach(function(t){ var s = slug(t), m = S.pr.beats[s] || (S.pr.beats[s] = {}); Object.keys(vals).forEach(function(k){ m[k] = vals[k]; }); });
+    $('#selPriceP').classList.add('hidden');
+    say($('#selMsg'),'Set the price for '+g.length+' beat'+(g.length>1?'s':'')+'. Nothing is live until you press Publish changes.','ok');
+    render();
+  };
+  $('#bpStd').onclick = function(){
+    var g = selTitles(); g.forEach(function(t){ delete S.pr.beats[slug(t)]; });
+    $('#selPriceP').classList.add('hidden');
+    say($('#selMsg'),g.length+' beat'+(g.length>1?'s':'')+' now use the standard prices. Nothing is live until you press Publish changes.','ok');
+    render();
+  };
+
+  /* ---- drag to reorder ---- */
+  function moveGroup(group,targetT,after){
+    var rest = S.list.filter(function(t){ return group.indexOf(t)<0; }), at = rest.indexOf(targetT);
+    if(at<0) return;
+    rest.splice.apply(rest,[after ? at+1 : at, 0].concat(group)); S.list = rest;
+  }
+  function nudge(t,dir){
+    var group = (S.sel[t] && selTitles().length>1) ? selTitles() : [t];
+    var vis = S.vis.filter(function(x){ return group.indexOf(x)<0 && !S.removed[x]; }), first = S.vis.indexOf(group[0]), pos = 0;
+    if(dir<0){ for(var i=0;i<S.vis.length && S.vis[i]!==group[0];i++) if(group.indexOf(S.vis[i])<0 && !S.removed[S.vis[i]]) pos = S.vis[i]; if(!pos) return; moveGroup(group,pos,false); }
+    else { var last = group[group.length-1], seen = false, nx = null; for(var j=0;j<S.vis.length;j++){ if(S.vis[j]===last){ seen = true; continue; } if(seen && group.indexOf(S.vis[j])<0 && !S.removed[S.vis[j]]){ nx = S.vis[j]; break; } } if(!nx) return; moveGroup(group,nx,true); }
+    S.focusT = t; render();
+  }
+  var DRAG = null;
+  function startDrag(e,t,handle){
+    if(e.button!==undefined && e.button!==0) return;
+    e.preventDefault();
+    var group = (S.sel[t] && selTitles().length>1) ? selTitles() : [t], box = $('#list');
+    DRAG = {group:group,target:null,after:false,y:e.clientY,timer:null};
+    try{ handle.setPointerCapture(e.pointerId); }catch(_){}
+    box.querySelectorAll('.b').forEach(function(r){ if(group.indexOf(r.getAttribute('data-t'))>=0) r.classList.add('dragging'); });
+    function mark(){
+      var rows = Array.prototype.slice.call(box.querySelectorAll('.b')).filter(function(r){ return group.indexOf(r.getAttribute('data-t'))<0 && !S.removed[r.getAttribute('data-t')]; });
+      rows.forEach(function(r){ r.classList.remove('drop-before','drop-after'); });
+      DRAG.target = null;
+      for(var i=0;i<rows.length;i++){
+        var rc = rows[i].getBoundingClientRect();
+        if(DRAG.y < rc.top + rc.height/2){ DRAG.target = rows[i].getAttribute('data-t'); DRAG.after = false; rows[i].classList.add('drop-before'); return; }
+      }
+      if(rows.length){ var lr = rows[rows.length-1]; DRAG.target = lr.getAttribute('data-t'); DRAG.after = true; lr.classList.add('drop-after'); }
+    }
+    function onMove(ev){ DRAG.y = ev.clientY; mark(); }
+    function tick(){
+      var rc = box.getBoundingClientRect(), d = 0;
+      if(DRAG.y < rc.top+36) d = -14; else if(DRAG.y > rc.bottom-36) d = 14;
+      if(d){ box.scrollTop += d; mark(); }
+    }
+    function end(ev,commit){
+      handle.removeEventListener('pointermove',onMove); handle.removeEventListener('pointerup',onUp); handle.removeEventListener('pointercancel',onCancel);
+      clearInterval(DRAG.timer);
+      var d = DRAG; DRAG = null;
+      box.querySelectorAll('.b').forEach(function(r){ r.classList.remove('dragging','drop-before','drop-after'); });
+      if(commit && d.target){ moveGroup(d.group,d.target,d.after); S.focusT = t; render(); }
+    }
+    function onUp(ev){ end(ev,true); } function onCancel(ev){ end(ev,false); }
+    handle.addEventListener('pointermove',onMove); handle.addEventListener('pointerup',onUp); handle.addEventListener('pointercancel',onCancel);
+    DRAG.timer = setInterval(tick,40); mark();
+  }
+
   /* ---- bulk genre and BPM ---- */
   var BULK = null;
   function bulkParse(text){
@@ -587,7 +750,7 @@
   $('#addBtn').onclick = commitQueue;
   $('#filter').oninput = render;
   $('#publish').onclick = publish;
-  $('#discard').onclick = function(){ S.list = S.original.slice(); S.files = {}; S.removed = {}; S.pr = JSON.parse(JSON.stringify(S.prLoaded)); S.meta = JSON.parse(JSON.stringify(S.metaLoaded)); S.prBad = {}; S.prOpen = {}; renderPrices(); render(); say($('#addMsg'),''); say($('#prMsg'),''); };
+  $('#discard').onclick = function(){ S.list = S.original.slice(); S.files = {}; S.removed = {}; S.sel = {}; S.lastSel = null; S.pr = JSON.parse(JSON.stringify(S.prLoaded)); S.meta = JSON.parse(JSON.stringify(S.metaLoaded)); S.prBad = {}; S.prOpen = {}; renderPrices(); render(); say($('#addMsg'),''); say($('#prMsg'),''); };
   window.addEventListener('beforeunload',function(e){ if(!$('#bar').classList.contains('hidden')){ e.preventDefault(); e.returnValue = ''; } });
 
   try{
