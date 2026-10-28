@@ -692,6 +692,11 @@
     "bpm": 100,
     "k": "C major"
   },
+  "soft-life": {
+    "g": "Dancehall",
+    "bpm": 100,
+    "k": "D minor"
+  },
   "soso": {
     "g": "Afrobeats",
     "bpm": 110,
