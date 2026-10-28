@@ -702,6 +702,11 @@
     "bpm": 97,
     "k": "F major"
   },
+  "switch": {
+    "g": "Afrobeats",
+    "bpm": 108,
+    "k": "E minor"
+  },
   "take-my-pain": {
     "g": "Afrobeats",
     "bpm": 102,
