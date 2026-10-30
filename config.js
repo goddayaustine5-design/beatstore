@@ -1,5 +1,6 @@
 /* ===== Austino Pro: site settings. Edit this file only; no other file needs changing. ===== */
 window.SITE_CONFIG = {
+  flutterwaveEnabled: false,
   // Your WhatsApp number in international format: country code 234, then the number WITHOUT its leading 0.
   // No plus sign, spaces, dashes or brackets. Example: 0801 234 5678 becomes "2348012345678".
   // Used by cart checkout and the "Request a custom beat" button.
