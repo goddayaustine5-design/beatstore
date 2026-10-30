@@ -1,0 +1,4 @@
+# Old /beats address goes to the store home page (same as the Vercel rule).
+/beats / 301
+/beats/ / 301
+/beats/index.html / 301
