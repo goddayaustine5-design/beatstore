@@ -11,7 +11,7 @@
   function lsDel(k){ try{ localStorage.removeItem(k); }catch(_){} }
   function say(el,text,cls){ el.textContent = text||''; el.className = 'msg'+(cls?' '+cls:''); }
 
-  var S = { sel:Object.create(null), lastSel:null, vis:[], meta:{}, metaLoaded:{}, metaText:null, metaBase:'', pr:null, prBase:'', prText:null, prOpen:{}, repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
+  var S = { codes:[], codesText:null, codesBase:'', codesLoaded:[], sel:Object.create(null), lastSel:null, vis:[], meta:{}, metaLoaded:{}, metaText:null, metaBase:'', pr:null, prBase:'', prText:null, prOpen:{}, repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
   // S.list = working order of titles. S.files[title] = File for new/replaced previews. S.removed[title] = true.
 
   function gh(method,path,body,accept){
@@ -296,10 +296,17 @@
       var md = null;
       if(mtext){ try{ md = JSON.parse(mtext); }catch(_){ throw new Error('meta.json could not be read (it is not valid JSON). Delete it on GitHub or fix it, then reload.'); } }
       S.metaText = mtext; S.meta = metaFromJSON(md); S.metaLoaded = JSON.parse(JSON.stringify(S.meta));
+      return gh('GET',repoPath('/contents/codes.json?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json').catch(function(e){
+        if(e.status===404) return null; throw e;
+      });
+    }).then(function(ctext){
+      var cd = null;
+      if(ctext){ try{ cd = JSON.parse(ctext); }catch(_){ throw new Error('codes.json could not be read (it is not valid JSON). Delete it on GitHub or fix it, then reload.'); } }
+      S.codesText = ctext; S.codes = codesFromJSON(cd); S.codesLoaded = JSON.parse(JSON.stringify(S.codes)); S.codesBase = codesJSON();
       S.prBase = prJSON(liveSlugs()); S.metaBase = metaJSON(liveSlugs());
       $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
       $('#who').textContent = S.repo+' · '+S.branch;
-      say($('#loginMsg'),''); say($('#prMsg'),''); $('#token').value = ''; renderPrices(); render(); renderQueue();
+      say($('#loginMsg'),''); say($('#prMsg'),''); $('#token').value = ''; renderPrices(); renderCodes(); render(); renderQueue();
     });
   }
 
@@ -376,6 +383,7 @@
     if(c.moved && !c.added) parts.push('order changed');
     if(priceChanged()) parts.push('prices changed');
     if(metaChanged()) parts.push('genre, BPM or key changed');
+    if(codesChanged()) parts.push('discount codes changed');
     var replaced = Object.keys(S.files).filter(function(t){ return S.original.indexOf(t)>=0; }).length;
     if(replaced) parts.push(replaced+' preview'+(replaced>1?'s':'')+' replaced');
     $('#bar').classList.toggle('hidden',!parts.length);
@@ -467,6 +475,9 @@
       return gh('GET',repoPath('/contents/meta.json?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json').catch(function(e){ if(e.status===404) return null; throw e; });
     }).then(function(mcur){
       if(mcur !== S.metaText) throw new Error('meta.json changed on GitHub since you opened this page. Reload the page and make your changes again so nothing is overwritten.');
+      return gh('GET',repoPath('/contents/codes.json?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json').catch(function(e){ if(e.status===404) return null; throw e; });
+    }).then(function(ccur){
+      if(ccur !== S.codesText) throw new Error('codes.json changed on GitHub since you opened this page. Reload the page and make your changes again so nothing is overwritten.');
       return gh('GET',repoPath('/git/commits/'+commitSha));
     }).then(function(c){
       baseTree = c.tree.sha;
@@ -494,6 +505,11 @@
       return gh('POST',repoPath('/git/blobs'),{content:metaJSON(liveSlugs()),encoding:'utf-8'});
     }).then(function(mb){
       if(mb) treeItems.push({path:'meta.json',mode:'100644',type:'blob',sha:mb.sha});
+      if(!codesChanged()) return null;
+      st('Saving discount codes…');
+      return gh('POST',repoPath('/git/blobs'),{content:codesJSON(),encoding:'utf-8'});
+    }).then(function(cb){
+      if(cb) treeItems.push({path:'codes.json',mode:'100644',type:'blob',sha:cb.sha});
       removedTitles.forEach(function(t){
         var s = slug(t), names = [s+'.mp3']; if(OLD_SLUGS[t]) names.push(OLD_SLUGS[t]+'.mp3');
         names.forEach(function(n){
@@ -504,7 +520,7 @@
       return gh('POST',repoPath('/git/trees'),{base_tree:baseTree,tree:treeItems});
     }).then(function(tr){
       var added = final.filter(function(t){ return S.original.indexOf(t)<0; }).length;
-      var bits = []; if(added) bits.push(added+' added'); if(removedTitles.length) bits.push(removedTitles.length+' removed'); if(priceChanged()) bits.push('prices updated'); if(metaChanged()) bits.push('genre, BPM and key updated');
+      var bits = []; if(added) bits.push(added+' added'); if(removedTitles.length) bits.push(removedTitles.length+' removed'); if(priceChanged()) bits.push('prices updated'); if(metaChanged()) bits.push('genre, BPM and key updated'); if(codesChanged()) bits.push('discount codes updated');
       var m = 'Admin: '+(bits.length ? bits.join(', ') : 'update list');
       st('Publishing…');
       return gh('POST',repoPath('/git/commits'),{message:m,tree:tr.sha,parents:[commitSha]});
@@ -518,6 +534,67 @@
       alert('Could not publish: '+(e && e.message || e)+'\n\nNothing was changed on your site.');
     });
   }
+
+  /* ---- discount codes ---- */
+  function codesFromJSON(d){
+    var out = [], a = d && typeof d==='object' && Array.isArray(d.codes) ? d.codes : [];
+    a.forEach(function(e){
+      if(!e || typeof e!=='object') return;
+      var h = String(e.h||'').toLowerCase(), p = e.p, x = String(e.exp||''), n = String(e.n||'');
+      if(!/^[0-9a-f]{64}$/.test(h) || typeof p!=='number' || p%1 || p<1 || p>90) return;
+      if(x && !/^\d{4}-\d{2}-\d{2}$/.test(x)) x = '';
+      if(!/^[A-Za-z0-9_-]{1,2}\*{0,22}$/.test(n)) n = '***';
+      if(out.some(function(o){ return o.h===h; })) return;
+      out.push({h:h,p:p,exp:x,on:e.on!==false,n:n});
+    });
+    return out;
+  }
+  function codesJSON(){
+    return JSON.stringify({codes:S.codes.map(function(c){ return {h:c.h,p:c.p,exp:c.exp||'',on:!!c.on,n:c.n}; })},null,2)+'\n';
+  }
+  function codesChanged(){ return codesJSON() !== S.codesBase; }
+  function sha256(t){
+    return crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)).then(function(b){
+      return Array.prototype.map.call(new Uint8Array(b),function(x){ return ('0'+x.toString(16)).slice(-2); }).join('');
+    });
+  }
+  function today(){ var d = new Date(Date.now()+3600000); return d.toISOString().slice(0,10); }
+  function renderCodes(){
+    var box = $('#cdList'); box.textContent = '';
+    if(!S.codes.length){ var e = document.createElement('p'); e.className = 'hint'; e.textContent = 'No discount codes yet.'; box.appendChild(e); return; }
+    S.codes.forEach(function(c){
+      var row = document.createElement('div'); row.className = 'b'; row.style.gridTemplateColumns = '1fr auto'; row.style.userSelect = 'text';
+      var nm = document.createElement('span'), t = document.createElement('b');
+      t.textContent = c.full || c.n; nm.appendChild(t);
+      var info = document.createElement('div'); info.className = 'hint mline';
+      var expired = c.exp && c.exp < today();
+      info.textContent = c.p+'% off · '+(c.exp ? 'works until '+c.exp : 'no expiry date')+(expired ? ' (expired)' : '')+(c.on ? '' : ' · switched off')+(c.full ? ' · the full code is shown only until you reload' : '');
+      nm.appendChild(info);
+      var act = document.createElement('span'); act.className = 'row';
+      var pi = document.createElement('input'); pi.type = 'text'; pi.inputMode = 'numeric'; pi.value = c.p; pi.style.width = '58px'; pi.setAttribute('aria-label','Percent off for '+(c.full||c.n));
+      pi.onchange = function(){ var v = pi.value.trim(); if(/^\d{1,2}$/.test(v) && +v>=1 && +v<=90){ c.p = +v; say($('#cdMsg'),''); renderCodes(); updateBar(); } else { pi.value = c.p; say($('#cdMsg'),'Percent off should be a whole number from 1 to 90.','err'); } };
+      var tg = document.createElement('button'); tg.type = 'button'; tg.className = 'small'; tg.textContent = c.on ? 'Switch off' : 'Switch on';
+      tg.onclick = function(){ c.on = !c.on; renderCodes(); updateBar(); };
+      var del = document.createElement('button'); del.type = 'button'; del.className = 'small danger'; del.textContent = 'Delete';
+      del.onclick = function(){ if(!confirm('Delete this code? Buyers will no longer be able to use it once you publish.')) return; S.codes = S.codes.filter(function(x){ return x!==c; }); renderCodes(); updateBar(); };
+      act.appendChild(pi); act.appendChild(tg); act.appendChild(del);
+      row.appendChild(nm); row.appendChild(act); box.appendChild(row);
+    });
+  }
+  $('#cdAdd').onclick = function(){
+    var code = $('#cdCode').value.toUpperCase().replace(/\s+/g,''), pr = $('#cdPct').value.trim(), exp = $('#cdExp').value;
+    if(!/^[A-Z0-9_-]{3,20}$/.test(code)){ say($('#cdMsg'),'The code should be 3 to 20 letters, numbers, dashes or underscores, with no spaces.','err'); return; }
+    if(!/^\d{1,2}$/.test(pr) || +pr<1 || +pr>90){ say($('#cdMsg'),'Percent off should be a whole number from 1 to 90.','err'); return; }
+    if(exp && (!/^\d{4}-\d{2}-\d{2}$/.test(exp) || exp < today())){ say($('#cdMsg'),'The last day cannot be in the past.','err'); return; }
+    if(!(window.crypto && crypto.subtle && window.TextEncoder)){ say($('#cdMsg'),'This browser cannot create codes. Use a current version of Chrome, Safari or Firefox.','err'); return; }
+    sha256('ap-promo-v1:'+code).then(function(h){
+      if(S.codes.some(function(c){ return c.h===h; })){ say($('#cdMsg'),'That code already exists.','err'); return; }
+      S.codes.push({h:h,p:+pr,exp:exp||'',on:true,n:code.slice(0,2)+new Array(code.length-1).join('*'),full:code});
+      $('#cdCode').value = ''; $('#cdPct').value = ''; $('#cdExp').value = '';
+      say($('#cdMsg'),'Code '+code+' added ('+pr+'% off). Write it down. Nothing is live until you press Publish changes.','ok');
+      renderCodes(); updateBar();
+    });
+  };
 
   /* ---- selecting several beats ---- */
   function selTitles(){ return S.list.filter(function(t){ return S.sel[t] && !S.removed[t]; }); }
@@ -739,7 +816,7 @@
     }).catch(function(e){ say($('#loginMsg'),e.message,'err'); });
   };
   $('#signout').onclick = function(){
-    if(Object.keys(S.files).length || changeCount().removed || priceChanged() || metaChanged()){ if(!confirm('You have unpublished changes. Sign out anyway?')) return; }
+    if(Object.keys(S.files).length || changeCount().removed || priceChanged() || metaChanged() || codesChanged()){ if(!confirm('You have unpublished changes. Sign out anyway?')) return; }
     lsDel('ap_admin'); location.reload();
   };
   $('#drop').onclick = function(){ $('#files').click(); };
@@ -751,7 +828,7 @@
   $('#addBtn').onclick = commitQueue;
   $('#filter').oninput = render;
   $('#publish').onclick = publish;
-  $('#discard').onclick = function(){ S.list = S.original.slice(); S.files = {}; S.removed = {}; S.sel = Object.create(null); S.lastSel = null; S.pr = JSON.parse(JSON.stringify(S.prLoaded)); S.meta = JSON.parse(JSON.stringify(S.metaLoaded)); S.prBad = {}; S.prOpen = {}; renderPrices(); render(); say($('#addMsg'),''); say($('#prMsg'),''); };
+  $('#discard').onclick = function(){ S.list = S.original.slice(); S.files = {}; S.removed = {}; S.sel = Object.create(null); S.lastSel = null; S.pr = JSON.parse(JSON.stringify(S.prLoaded)); S.meta = JSON.parse(JSON.stringify(S.metaLoaded)); S.codes = JSON.parse(JSON.stringify(S.codesLoaded)); renderCodes(); say($('#cdMsg'),''); S.prBad = {}; S.prOpen = {}; renderPrices(); render(); say($('#addMsg'),''); say($('#prMsg'),''); };
   window.addEventListener('beforeunload',function(e){ if(!$('#bar').classList.contains('hidden')){ e.preventDefault(); e.returnValue = ''; } });
 
   try{

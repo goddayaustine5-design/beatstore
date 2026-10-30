@@ -290,6 +290,8 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
 .d-foot input:focus{border-color:var(--accent);outline:none}
 .d-foot .btn{width:100%;white-space:normal;text-align:center;line-height:1.25;letter-spacing:.02em}
 .d-foot .btn[disabled]{opacity:.4;cursor:not-allowed}
+.prow{display:flex;gap:8px}.prow input{text-transform:uppercase}.d-foot .prow .btn{width:auto;padding-left:18px;padding-right:18px}
+.item.disc .linkb{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;font-size:.82rem;padding:0 0 0 8px}
 .note{font-size:.8rem;color:var(--muted)}
 .note:empty{display:none}
 .done{padding:28px 0;display:grid;gap:12px}
@@ -440,6 +442,11 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   <div class="d-body" id="cartBody"></div>
   <form class="d-foot" id="payForm" novalidate>
     <button class="btn btn-ghost" id="contShop" type="button">&larr; Continue shopping</button>
+    <div id="promoBox" hidden>
+      <label class="sr" for="promoIn">Promo code</label>
+      <div class="prow"><input id="promoIn" type="text" placeholder="Promo code" maxlength="24" autocomplete="off" autocapitalize="characters" spellcheck="false"><button class="btn btn-ghost" id="promoBtn" type="button">Apply</button></div>
+      <p class="note" id="promoMsg" style="margin-top:6px"></p>
+    </div>
     <div class="total"><span>Total</span><span id="total">&#8358;0</span></div>
     <p class="note" id="rateNote" hidden></p>
     <label class="sr" for="payEmail">Email</label>
@@ -489,7 +496,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
 </div>
 <script src="config.js"></script>
 <script>
-function startStore(REMOTE,PRICECFG,METACFG){
+function startStore(REMOTE,PRICECFG,METACFG,CODECFG){
   var NGN = new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0});
   // Naira is the base price. Other currencies are converted from naira with a live exchange rate (see "currency" below).
   var CURRENCIES = [{c:'NGN',n:'Naira (₦)',w:'Nigerian naira'},{c:'USD',n:'US Dollar ($)',w:'US dollars'},{c:'GBP',n:'British Pound (£)',w:'British pounds'},{c:'EUR',n:'Euro (€)',w:'euros'}];
@@ -787,6 +794,56 @@ function startStore(REMOTE,PRICECFG,METACFG){
       });
     }catch(_){}
   }
+  /* ---------- promo codes ---------- */
+  // Codes live in codes.json as SHA-256 hashes (set in the admin page), so they are not listed in plain text.
+  // This is a convenience check in the browser: always verify the amount paid before sending files.
+  var PROMO_KEY = 'ap_promo', promo = null, CODES = [];
+  (function(){
+    var a = CODECFG && Array.isArray(CODECFG.codes) ? CODECFG.codes : [];
+    a.forEach(function(e){
+      if(!e || typeof e !== 'object' || e.on === false) return;
+      var h = String(e.h||'').toLowerCase(), p = e.p, x = String(e.exp||'');
+      if(!/^[0-9a-f]{64}$/.test(h) || typeof p !== 'number' || p%1 || p<1 || p>90) return;
+      if(x && !/^\d{4}-\d{2}-\d{2}$/.test(x)) return;
+      CODES.push({h:h,p:p,exp:x});
+    });
+  })();
+  function promoLive(e){ return !e.exp || Date.now() <= Date.parse(e.exp+'T23:59:59+01:00'); }
+  function normCode(t){ return String(t||'').toUpperCase().replace(/[^A-Z0-9_-]/g,'').slice(0,24); }
+  function sha256(t){
+    return crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)).then(function(b){
+      return Array.prototype.map.call(new Uint8Array(b),function(x){ return ('0'+x.toString(16)).slice(-2); }).join('');
+    });
+  }
+  var PROMO_OK = !!(CODES.length && window.crypto && crypto.subtle && window.TextEncoder);
+  // resolves to {p,code} or a reason string
+  function checkCode(raw){
+    var code = normCode(raw);
+    if(code.length < 3) return Promise.resolve('Enter your promo code.');
+    return sha256('ap-promo-v1:'+code).then(function(h){
+      var e = CODES.filter(function(x){ return x.h === h; })[0];
+      if(!e) return 'That code is not valid.';
+      if(!promoLive(e)) return 'That code has expired.';
+      return {p:e.p,code:code,exp:e.exp,h:h};
+    }).catch(function(){ return 'Could not check the code. Try again.'; });
+  }
+  function promoNote(t,bad){ var m = $('#promoMsg'); m.textContent = t; m.style.color = bad ? 'var(--bad)' : ''; }
+  function applyPromo(){
+    if(!PROMO_OK) return;
+    var raw = $('#promoIn').value;
+    checkCode(raw).then(function(r){
+      if(typeof r === 'string'){ promoNote(r,true); return; }
+      promo = r; try{ sessionStorage.setItem(PROMO_KEY,r.code); }catch(_){}
+      $('#promoIn').value = ''; promoNote('Code '+r.code+' applied: '+r.p+'% off.'); resetNote(); renderCart();
+    });
+  }
+  function clearPromo(){ promo = null; try{ sessionStorage.removeItem(PROMO_KEY); }catch(_){} promoNote(''); resetNote(); renderCart(); }
+  function restorePromo(){
+    if(!PROMO_OK) return;
+    var c = ''; try{ c = sessionStorage.getItem(PROMO_KEY) || ''; }catch(_){}
+    if(!c) return;
+    checkCode(c).then(function(r){ if(typeof r !== 'string'){ promo = r; renderCart(); } else { try{ sessionStorage.removeItem(PROMO_KEY); }catch(_){} } });
+  }
   // Bundle deals: 3 beats = 1 free, 5 beats = 2 free, 7 or more = 3 free. The cheapest beats are the free ones.
   function calc(){
     var sub = 0, bp = [];
@@ -795,7 +852,9 @@ function startStore(REMOTE,PRICECFG,METACFG){
     bp.sort(function(a,b){return a-b});
     var disc = 0; for(var j=0;j<free;j++) disc += bp[j];
     var next = n<3 ? [3-n,1] : n<5 ? [5-n,2] : n<7 ? [7-n,3] : null;
-    return {sub:sub,disc:disc,total:sub-disc,n:n,free:free,next:next};
+    if(promo && !promoLive(promo)) promo = null;
+    var pd = promo && sub-disc>0 ? Math.round((sub-disc)*promo.p/100) : 0;
+    return {sub:sub,disc:disc,promo:pd,pcode:pd?promo.code:'',ppct:pd?promo.p:0,total:sub-disc-pd,n:n,free:free,next:next};
   }
   function total(){ return calc().total; }
   function renderCart(){
@@ -824,10 +883,12 @@ function startStore(REMOTE,PRICECFG,METACFG){
       });
       var c = calc();
       if(c.disc) h += '<div class="item disc"><span>Bundle deal: '+c.free+' beat'+(c.free>1?'s':'')+' free</span><span>−'+money(c.disc)+'</span></div>';
+      if(c.promo) h += '<div class="item disc"><span>Promo code '+esc(c.pcode)+': '+c.ppct+'% off<button class="linkb" id="promoRm" type="button">Remove</button></span><span>−'+money(c.promo)+'</span></div>';
       if(c.next) h += '<p class="hint" style="padding:14px 0">Add '+c.next[0]+' more beat'+(c.next[0]>1?'s':'')+' to get '+c.next[1]+' free.</p>';
       body.innerHTML = h;
     }
     $('#total').textContent = money(total());
+    $('#promoBox').hidden = !PROMO_OK || !n;
     $('#payBtn').disabled = !n || waBusy;
     $('#payBtn').textContent = FLW_ON ? 'ORDER ON WHATSAPP' : 'CHECKOUT VIA WHATSAPP';
     $('#payBtn').classList.toggle('btn-ghost',FLW_ON); $('#payBtn').classList.toggle('btn-primary',!FLW_ON);
@@ -835,7 +896,10 @@ function startStore(REMOTE,PRICECFG,METACFG){
     $('#flwBtn').disabled = !n || flwBusy;
     saveCart();
   }
+  $('#promoBtn').addEventListener('click',applyPromo);
+  $('#promoIn').addEventListener('keydown',function(e){ if(e.key === 'Enter'){ e.preventDefault(); applyPromo(); } });
   $('#cartBody').addEventListener('click',function(e){
+    if(e.target.closest('#promoRm')){ clearPromo(); return; }
     var r = e.target.closest('.rm'); if(r){ cart.delete(r.getAttribute('data-k')); resetNote(); renderCart(); }
   });
   /* ---------- WhatsApp checkout ---------- */
@@ -872,7 +936,7 @@ function startStore(REMOTE,PRICECFG,METACFG){
       sum += i.price;
     });
     if(bad) return bad;
-    if(sum !== c.sub || c.total !== c.sub - c.disc || c.total <= 0 || $('#total').textContent !== money(c.total))
+    if(sum !== c.sub || c.total !== c.sub - c.disc - c.promo || c.total <= 0 || $('#total').textContent !== money(c.total))
       return 'The order total could not be verified. Please close and reopen the cart, then try again.';
     return '';
   }
@@ -887,7 +951,12 @@ function startStore(REMOTE,PRICECFG,METACFG){
     });
     if(compact) L.push('');
     L.push('━━━━━━━━━━━━━━━━','');
-    if(c.disc) L.push('Subtotal: '+NGN.format(c.sub),'Bundle Discount ('+c.free+' beat'+(c.free>1?'s':'')+' free): -'+NGN.format(c.disc),'');
+    if(c.disc || c.promo){
+      L.push('Subtotal: '+NGN.format(c.sub));
+      if(c.disc) L.push('Bundle Discount ('+c.free+' beat'+(c.free>1?'s':'')+' free): -'+NGN.format(c.disc));
+      if(c.promo) L.push('Promo code '+c.pcode+' ('+c.ppct+'% off): -'+NGN.format(c.promo));
+      L.push('');
+    }
     L.push('💰 TOTAL: '+NGN.format(c.total),'');
     if(curCode !== 'NGN' && RATES[curCode]) L.push('(Shown on the website as about '+money(c.total)+'. Please confirm in naira.)','');
     if(email) L.push('Customer Email: '+email,'');
@@ -932,7 +1001,7 @@ function startStore(REMOTE,PRICECFG,METACFG){
       modal = window.FlutterwaveCheckout({
         public_key: FLW_KEY, tx_ref: ref, amount: amount, currency: cur,
         customer: {email: email},
-        meta: {order: list.join('; ').slice(0,240), naira_total: c.total},
+        meta: {order: list.join('; ').slice(0,240), naira_total: c.total, promo: c.pcode || ''},
         customizations: {title: 'Austino Pro', description: 'Beat order '+ref},
         callback: function(res){
           if(done) return;
@@ -943,7 +1012,7 @@ function startStore(REMOTE,PRICECFG,METACFG){
             var url = waUrl(buildMessage(c,email,ref,false,pay,snap));
             if(url.length > MAX_WHATSAPP_URL_LENGTH) url = waUrl(buildMessage(c,email,ref,true,pay,snap));
             setPaid({ref: ref, id: pay.id, shown: shown, url: url});
-            cart.clear(); flwBusy = false; resetNote(); renderCart();
+            cart.clear(); promo = null; try{ sessionStorage.removeItem(PROMO_KEY); }catch(_){} flwBusy = false; resetNote(); renderCart();
             try{ if(modal && typeof modal.close === 'function') modal.close(); }catch(_){}
           } else {
             flwBusy = false; renderCart();
@@ -1523,7 +1592,7 @@ function startStore(REMOTE,PRICECFG,METACFG){
   }
   $('#cur').addEventListener('change',function(){ setCurrency(this.value); });
 
-  restoreCart();
+  restoreCart(); restorePromo();
   renderChips(); renderStore(); renderCart();
   loadRates();
   goToHash();
@@ -1540,7 +1609,7 @@ function startStore(REMOTE,PRICECFG,METACFG){
 // If beats.json can't be loaded the built-in list below is used; if prices.json is missing the built-in naira prices are used.
 (function(){
   var done = false;
-  function go(list,prices,meta){ if(done) return; done = true; startStore(list,prices,meta); }
+  function go(list,prices,meta,codes){ if(done) return; done = true; startStore(list,prices,meta,codes); }
   function getJSON(url,retry){
     return fetch(url,{cache:'no-cache'}).then(function(r){
       if(r.status === 404) return null;
@@ -1559,10 +1628,10 @@ function startStore(REMOTE,PRICECFG,METACFG){
       });
       return out.length ? out : null;
     });
-    var pPrices = getJSON('prices.json',true), pMeta = getJSON('meta.json',true);
-    Promise.all([pBeats,pPrices,pMeta]).then(function(a){ go(a[0],a[1],a[2]); }).catch(function(){ go(null,null,null); });
-    setTimeout(function(){ go(null,null,null); },6000);
-  }catch(_){ go(null,null,null); }
+    var pPrices = getJSON('prices.json',true), pMeta = getJSON('meta.json',true), pCodes = getJSON('codes.json',true);
+    Promise.all([pBeats,pPrices,pMeta,pCodes]).then(function(a){ go(a[0],a[1],a[2],a[3]); }).catch(function(){ go(null,null,null,null); });
+    setTimeout(function(){ go(null,null,null,null); },6000);
+  }catch(_){ go(null,null,null,null); }
 })();
 </script>
 

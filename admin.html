@@ -156,6 +156,23 @@ input.bad{border-color:var(--bad)!important}
       </details>
     </section>
 
+    <section class="card" id="codeCard">
+      <h2>Discount codes</h2>
+      <details>
+        <summary>Create promo codes that take a percentage off the cart</summary>
+        <p class="hint" style="margin:10px 0 0">A buyer types the code in their cart and the percentage comes off the total (after any bundle deal). It applies to the MP3, WAV and Unlimited licences in the cart. Exclusive offers are not changed. Codes are stored in a scrambled form, so after you publish, only the first two letters can be shown here. Write the full code down when you create it.</p>
+        <div class="pr" style="margin-top:12px">
+          <div><label for="cdCode">Code</label><input id="cdCode" type="text" maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="e.g. WELCOME10"></div>
+          <div><label for="cdPct">Percent off (1 to 90)</label><input id="cdPct" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 10"></div>
+          <div><label for="cdExp">Last day it works (optional)</label><input id="cdExp" type="date"></div>
+        </div>
+        <div class="row" style="margin-top:10px"><button class="primary small" id="cdAdd" type="button">Add code</button></div>
+        <div id="cdMsg" class="msg"></div>
+        <div id="cdList" style="margin-top:8px"></div>
+        <p class="hint" style="margin:10px 0 0">Nothing goes live until you press Publish changes. The check happens in the buyer's browser, so always compare the amount paid with your records before sending files.</p>
+      </details>
+    </section>
+
     <section class="card" id="bulkCard">
       <h2>Fill in genre and BPM from a list</h2>
       <details>
