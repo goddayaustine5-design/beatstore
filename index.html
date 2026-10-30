@@ -516,7 +516,7 @@ function startStore(REMOTE,PRICECFG,METACFG,CODECFG){
   // Online payment is only switched on when a Flutterwave PUBLIC key is set in config.js. A secret key is refused.
   var FLW_KEY = String((window.SITE_CONFIG || {}).flutterwavePublicKey || '').trim();
   if(/^FLWSECK/i.test(FLW_KEY)){ console.error('config.js contains a Flutterwave SECRET key. It was ignored. Remove it and use the public key (FLWPUBK...).'); FLW_KEY = ''; }
-  var FLW_ON = /^FLWPUBK/.test(FLW_KEY), FLW_TEST = /TEST/.test(FLW_KEY);
+  var FLW_ON = /^FLWPUBK/.test(FLW_KEY) && (window.SITE_CONFIG || {}).flutterwaveEnabled !== false, FLW_TEST = /TEST/.test(FLW_KEY);
   const WHATSAPP_BUSINESS_NUMBER = String((window.SITE_CONFIG || {}).whatsappNumber || "");
   // Longest WhatsApp link we will open. Longer orders are sent in a compact layout, then refused with a message.
   const MAX_WHATSAPP_URL_LENGTH = 3000;

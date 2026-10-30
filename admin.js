@@ -11,7 +11,7 @@
   function lsDel(k){ try{ localStorage.removeItem(k); }catch(_){} }
   function say(el,text,cls){ el.textContent = text||''; el.className = 'msg'+(cls?' '+cls:''); }
 
-  var S = { codes:[], codesText:null, codesBase:'', codesLoaded:[], sel:Object.create(null), lastSel:null, vis:[], meta:{}, metaLoaded:{}, metaText:null, metaBase:'', pr:null, prBase:'', prText:null, prOpen:{}, repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
+  var S = { cfgText:null, cfg:{wa:'',key:'',on:true,form:'',email:''}, cfgLoaded:null, cfgBase:'', codes:[], codesText:null, codesBase:'', codesLoaded:[], sel:Object.create(null), lastSel:null, vis:[], meta:{}, metaLoaded:{}, metaText:null, metaBase:'', pr:null, prBase:'', prText:null, prOpen:{}, repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
   // S.list = working order of titles. S.files[title] = File for new/replaced previews. S.removed[title] = true.
 
   function gh(method,path,body,accept){
@@ -303,10 +303,15 @@
       var cd = null;
       if(ctext){ try{ cd = JSON.parse(ctext); }catch(_){ throw new Error('codes.json could not be read (it is not valid JSON). Delete it on GitHub or fix it, then reload.'); } }
       S.codesText = ctext; S.codes = codesFromJSON(cd); S.codesLoaded = JSON.parse(JSON.stringify(S.codes)); S.codesBase = codesJSON();
+      return gh('GET',repoPath('/contents/config.js?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json').catch(function(e){
+        if(e.status===404) return null; throw e;
+      });
+    }).then(function(gtext){
+      cfgLoad(gtext);
       S.prBase = prJSON(liveSlugs()); S.metaBase = metaJSON(liveSlugs());
       $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
       $('#who').textContent = S.repo+' · '+S.branch;
-      say($('#loginMsg'),''); say($('#prMsg'),''); $('#token').value = ''; renderPrices(); renderCodes(); render(); renderQueue();
+      say($('#loginMsg'),''); say($('#prMsg'),''); $('#token').value = ''; renderPrices(); renderCodes(); renderConn(); render(); renderQueue();
     });
   }
 
@@ -384,6 +389,7 @@
     if(priceChanged()) parts.push('prices changed');
     if(metaChanged()) parts.push('genre, BPM or key changed');
     if(codesChanged()) parts.push('discount codes changed');
+    if(cfgChanged()) parts.push('connections changed');
     var replaced = Object.keys(S.files).filter(function(t){ return S.original.indexOf(t)>=0; }).length;
     if(replaced) parts.push(replaced+' preview'+(replaced>1?'s':'')+' replaced');
     $('#bar').classList.toggle('hidden',!parts.length);
@@ -458,6 +464,9 @@
     if(!final.length){ alert('The list would be empty. Keep at least one beat.'); btn.disabled = false; $('#discard').disabled = false; return; }
     var pp = prProblem();
     if(pp){ alert(pp); btn.disabled = false; $('#discard').disabled = false; return; }
+    var cp = cfgProblem();
+    if(cp){ alert(cp); btn.disabled = false; $('#discard').disabled = false; return; }
+    if(cfgMoneyChanged() && !confirm('You are changing where orders or payments go.\n\n'+cfgMoneySummary()+'\nPublish this change?')){ btn.disabled = false; $('#discard').disabled = false; return; }
     var removedTitles = Object.keys(S.removed);
     var ok = removedTitles.length ? confirm('Remove '+removedTitles.length+' beat'+(removedTitles.length>1?'s':'')+' from the site and delete the preview file'+(removedTitles.length>1?'s':'')+'?') : true;
     if(!ok){ btn.disabled = false; $('#discard').disabled = false; return; }
@@ -478,6 +487,9 @@
       return gh('GET',repoPath('/contents/codes.json?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json').catch(function(e){ if(e.status===404) return null; throw e; });
     }).then(function(ccur){
       if(ccur !== S.codesText) throw new Error('codes.json changed on GitHub since you opened this page. Reload the page and make your changes again so nothing is overwritten.');
+      return gh('GET',repoPath('/contents/config.js?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json').catch(function(e){ if(e.status===404) return null; throw e; });
+    }).then(function(gcur){
+      if(gcur !== S.cfgText) throw new Error('config.js changed on GitHub since you opened this page. Reload the page and make your changes again so nothing is overwritten.');
       return gh('GET',repoPath('/git/commits/'+commitSha));
     }).then(function(c){
       baseTree = c.tree.sha;
@@ -510,6 +522,11 @@
       return gh('POST',repoPath('/git/blobs'),{content:codesJSON(),encoding:'utf-8'});
     }).then(function(cb){
       if(cb) treeItems.push({path:'codes.json',mode:'100644',type:'blob',sha:cb.sha});
+      if(!cfgChanged()) return null;
+      st('Saving connections…');
+      return gh('POST',repoPath('/git/blobs'),{content:cfgBuild(),encoding:'utf-8'});
+    }).then(function(gb){
+      if(gb) treeItems.push({path:'config.js',mode:'100644',type:'blob',sha:gb.sha});
       removedTitles.forEach(function(t){
         var s = slug(t), names = [s+'.mp3']; if(OLD_SLUGS[t]) names.push(OLD_SLUGS[t]+'.mp3');
         names.forEach(function(n){
@@ -520,7 +537,7 @@
       return gh('POST',repoPath('/git/trees'),{base_tree:baseTree,tree:treeItems});
     }).then(function(tr){
       var added = final.filter(function(t){ return S.original.indexOf(t)<0; }).length;
-      var bits = []; if(added) bits.push(added+' added'); if(removedTitles.length) bits.push(removedTitles.length+' removed'); if(priceChanged()) bits.push('prices updated'); if(metaChanged()) bits.push('genre, BPM and key updated'); if(codesChanged()) bits.push('discount codes updated');
+      var bits = []; if(added) bits.push(added+' added'); if(removedTitles.length) bits.push(removedTitles.length+' removed'); if(priceChanged()) bits.push('prices updated'); if(metaChanged()) bits.push('genre, BPM and key updated'); if(codesChanged()) bits.push('discount codes updated'); if(cfgChanged()) bits.push('connections updated');
       var m = 'Admin: '+(bits.length ? bits.join(', ') : 'update list');
       st('Publishing…');
       return gh('POST',repoPath('/git/commits'),{message:m,tree:tr.sha,parents:[commitSha]});
@@ -534,6 +551,64 @@
       alert('Could not publish: '+(e && e.message || e)+'\n\nNothing was changed on your site.');
     });
   }
+
+  /* ---- connections (config.js) ---- */
+  var CFG_TEMPLATE = '/* Austino Pro: site settings. Managed from the admin page. */\nwindow.SITE_CONFIG = {\n};\n';
+  function cfgStr(text,k){ var m = new RegExp('(^|\\n)[ \\t]*'+k+'[ \\t]*:[ \\t]*"([^"\\\\\\n]*)"').exec(text||''); return m ? m[2] : ''; }
+  function cfgLoad(text){
+    S.cfgText = text;
+    var on = /(^|\n)[ \t]*flutterwaveEnabled[ \t]*:[ \t]*(true|false)/.exec(text||'');
+    S.cfg = {wa:cfgStr(text,'whatsappNumber'),key:cfgStr(text,'flutterwavePublicKey'),on:on ? on[2]==='true' : true,form:cfgStr(text,'contactFormEndpoint'),email:cfgStr(text,'contactEmail')};
+    S.cfgLoaded = JSON.parse(JSON.stringify(S.cfg)); S.cfgBase = JSON.stringify(S.cfg);
+  }
+  function cfgChanged(){ return JSON.stringify(S.cfg) !== S.cfgBase; }
+  function cfgProblem(){
+    var c = S.cfg;
+    if(!/^[1-9]\d{7,14}$/.test(c.wa)) return 'The WhatsApp number should be digits only, starting with the country code (for example 2348012345678), with no plus sign, spaces or leading 0.';
+    if(/FLWSECK/i.test(c.key)) return 'That looks like a Flutterwave SECRET key. Never put it on the site. Use the public key (it starts with FLWPUBK).';
+    if(c.key && !/^FLWPUBK(_TEST)?-[A-Za-z0-9_-]{10,100}$/.test(c.key)) return 'The Flutterwave key should be your PUBLIC key and start with FLWPUBK.';
+    if(c.form && !/^https:\/\/formspree\.io\/f\/[A-Za-z0-9]{4,24}$/.test(c.form)) return 'The contact form address should look like https://formspree.io/f/abcdwxyz.';
+    if(c.email && !/^[^\s@"'<>\\]+@[^\s@"'<>\\]+\.[^\s@"'<>\\]+$/.test(c.email)) return 'The contact email does not look right.';
+    return '';
+  }
+  function cfgMoneyChanged(){ var a = S.cfgLoaded, b = S.cfg; return a.wa !== b.wa || a.key !== b.key || a.on !== b.on; }
+  function mask(k){ return k ? (k.length>14 ? k.slice(0,10)+'…'+k.slice(-4) : k) : '(none)'; }
+  function cfgMoneySummary(){
+    var a = S.cfgLoaded, b = S.cfg, L = [];
+    if(a.wa !== b.wa) L.push('WhatsApp number: '+(a.wa||'(none)')+'  →  '+b.wa);
+    if(a.key !== b.key) L.push('Flutterwave key: '+mask(a.key)+'  →  '+mask(b.key));
+    if(a.on !== b.on) L.push('Pay now button: '+(a.on?'on':'off')+'  →  '+(b.on?'on':'off'));
+    return L.join('\n')+'\n';
+  }
+  function cfgSet(text,key,lit){
+    var re = new RegExp('((?:^|\\n)[ \\t]*'+key+'[ \\t]*:[ \\t]*)(?:"[^"\\\\\\n]*"|true|false)');
+    if(re.test(text)) return text.replace(re,function(_,p){ return p+lit; });
+    return text.replace(/window\.SITE_CONFIG[ \t]*=[ \t]*\{/,function(m){ return m+'\n  '+key+': '+lit+','; });
+  }
+  function cfgBuild(){
+    var t = S.cfgText || CFG_TEMPLATE, c = S.cfg;
+    t = cfgSet(t,'whatsappNumber',JSON.stringify(c.wa));
+    t = cfgSet(t,'flutterwavePublicKey',JSON.stringify(c.key));
+    t = cfgSet(t,'flutterwaveEnabled',c.on ? 'true' : 'false');
+    t = cfgSet(t,'contactFormEndpoint',JSON.stringify(c.form));
+    t = cfgSet(t,'contactEmail',JSON.stringify(c.email));
+    return t;
+  }
+  function renderConn(){
+    $('#cnWa').value = S.cfg.wa; $('#cnKey').value = S.cfg.key; $('#cnOn').checked = !!S.cfg.on; $('#cnForm').value = S.cfg.form; $('#cnEmail').value = S.cfg.email;
+    cnTest();
+  }
+  function cnTest(){
+    var a = $('#cnWaTest'), ok = /^[1-9]\d{7,14}$/.test(S.cfg.wa);
+    a.href = ok ? 'https://wa.me/'+S.cfg.wa+'?text='+encodeURIComponent('Test message from my store admin page.') : '#';
+    a.style.opacity = ok ? '1' : '.4'; a.style.pointerEvents = ok ? 'auto' : 'none';
+  }
+  function cnRead(){
+    S.cfg.wa = $('#cnWa').value.replace(/\s+/g,''); S.cfg.key = $('#cnKey').value.trim(); S.cfg.on = $('#cnOn').checked; S.cfg.form = $('#cnForm').value.trim(); S.cfg.email = $('#cnEmail').value.trim();
+    var p = cfgProblem(); say($('#cnMsg'),p,'err'); cnTest(); updateBar();
+  }
+  ['#cnWa','#cnKey','#cnForm','#cnEmail'].forEach(function(id){ $(id).addEventListener('input',cnRead); });
+  $('#cnOn').addEventListener('change',cnRead);
 
   /* ---- discount codes ---- */
   function codesFromJSON(d){
@@ -816,7 +891,7 @@
     }).catch(function(e){ say($('#loginMsg'),e.message,'err'); });
   };
   $('#signout').onclick = function(){
-    if(Object.keys(S.files).length || changeCount().removed || priceChanged() || metaChanged() || codesChanged()){ if(!confirm('You have unpublished changes. Sign out anyway?')) return; }
+    if(Object.keys(S.files).length || changeCount().removed || priceChanged() || metaChanged() || codesChanged() || cfgChanged()){ if(!confirm('You have unpublished changes. Sign out anyway?')) return; }
     lsDel('ap_admin'); location.reload();
   };
   $('#drop').onclick = function(){ $('#files').click(); };
@@ -828,7 +903,7 @@
   $('#addBtn').onclick = commitQueue;
   $('#filter').oninput = render;
   $('#publish').onclick = publish;
-  $('#discard').onclick = function(){ S.list = S.original.slice(); S.files = {}; S.removed = {}; S.sel = Object.create(null); S.lastSel = null; S.pr = JSON.parse(JSON.stringify(S.prLoaded)); S.meta = JSON.parse(JSON.stringify(S.metaLoaded)); S.codes = JSON.parse(JSON.stringify(S.codesLoaded)); renderCodes(); say($('#cdMsg'),''); S.prBad = {}; S.prOpen = {}; renderPrices(); render(); say($('#addMsg'),''); say($('#prMsg'),''); };
+  $('#discard').onclick = function(){ S.list = S.original.slice(); S.files = {}; S.removed = {}; S.sel = Object.create(null); S.lastSel = null; S.pr = JSON.parse(JSON.stringify(S.prLoaded)); S.meta = JSON.parse(JSON.stringify(S.metaLoaded)); S.codes = JSON.parse(JSON.stringify(S.codesLoaded)); S.cfg = JSON.parse(JSON.stringify(S.cfgLoaded)); renderConn(); say($('#cnMsg'),''); renderCodes(); say($('#cdMsg'),''); S.prBad = {}; S.prOpen = {}; renderPrices(); render(); say($('#addMsg'),''); say($('#prMsg'),''); };
   window.addEventListener('beforeunload',function(e){ if(!$('#bar').classList.contains('hidden')){ e.preventDefault(); e.returnValue = ''; } });
 
   try{

@@ -156,6 +156,27 @@ input.bad{border-color:var(--bad)!important}
       </details>
     </section>
 
+    <section class="card" id="connCard">
+      <h2>Connections</h2>
+      <details>
+        <summary>WhatsApp number, online payment and contact form</summary>
+        <p class="hint" style="margin:10px 0 0">These are the public settings your store uses. Never paste a secret key here. Changes go live when you press Publish changes.</p>
+        <label for="cnWa" style="margin-top:12px">WhatsApp number for orders</label>
+        <div class="row"><input id="cnWa" type="text" inputmode="numeric" autocomplete="off" placeholder="2349010216751" style="max-width:260px"><a id="cnWaTest" class="small" href="#" target="_blank" rel="noopener noreferrer">Test on WhatsApp</a></div>
+        <div class="hint" style="margin-top:4px">Country code first, then the number without its leading 0, digits only. Example: 2348012345678.</div>
+        <label for="cnKey" style="margin-top:14px">Flutterwave public key</label>
+        <input id="cnKey" type="text" autocomplete="off" spellcheck="false" placeholder="FLWPUBK-...">
+        <label style="display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--fg);font-size:.92rem"><input type="checkbox" id="cnOn" style="width:18px;height:18px;margin:0"> Show the "Pay now" button</label>
+        <div class="hint" style="margin-top:4px">Use the public key only (it starts with FLWPUBK). Turning the button off keeps your key saved.</div>
+        <label for="cnForm" style="margin-top:14px">Contact form address (Formspree)</label>
+        <input id="cnForm" type="text" autocomplete="off" spellcheck="false" placeholder="https://formspree.io/f/abcdwxyz">
+        <label for="cnEmail" style="margin-top:14px">Contact email (backup, optional)</label>
+        <input id="cnEmail" type="text" inputmode="email" autocomplete="off" spellcheck="false" placeholder="you@example.com">
+        <div id="cnMsg" class="msg"></div>
+        <p class="hint" style="margin:10px 0 0">Changing the WhatsApp number or the Flutterwave key changes where orders and payments go, so you will be asked to confirm when you publish.</p>
+      </details>
+    </section>
+
     <section class="card" id="codeCard">
       <h2>Discount codes</h2>
       <details>
