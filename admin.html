@@ -172,8 +172,40 @@ input.bad{border-color:var(--bad)!important}
         <input id="cnForm" type="text" autocomplete="off" spellcheck="false" placeholder="https://formspree.io/f/abcdwxyz">
         <label for="cnEmail" style="margin-top:14px">Contact email (backup, optional)</label>
         <input id="cnEmail" type="text" inputmode="email" autocomplete="off" spellcheck="false" placeholder="you@example.com">
+        <label for="cnRv" style="margin-top:14px">Reviews inbox address (optional)</label>
+        <input id="cnRv" type="text" autocomplete="off" spellcheck="false" placeholder="https://austino-reviews.yourname.workers.dev">
+        <label for="cnTs" style="margin-top:14px">Reviews spam-check site key (Cloudflare Turnstile, optional)</label>
+        <input id="cnTs" type="text" autocomplete="off" spellcheck="false" placeholder="0x4AAAAAAA...">
+        <div class="hint" style="margin-top:4px">Both are needed for the "Leave a review" form to show on the Reviews page. The site key is public. Never paste the Turnstile secret key here.</div>
+        <label for="cnGa" style="margin-top:14px">Google Analytics Measurement ID (optional)</label>
+        <input id="cnGa" type="text" autocomplete="off" spellcheck="false" placeholder="G-ABC123XYZ9" style="max-width:260px">
+        <div class="hint" style="margin-top:4px">Find it in Google Analytics: Admin, Data streams, your website. Visitors see an Accept or Decline notice, and tracking only starts if they accept. Leave empty to switch analytics off.</div>
         <div id="cnMsg" class="msg"></div>
         <p class="hint" style="margin:10px 0 0">Changing the WhatsApp number or the Flutterwave key changes where orders and payments go, so you will be asked to confirm when you publish.</p>
+      </details>
+    </section>
+
+    <section class="card" id="rvCard">
+      <h2>Reviews</h2>
+      <details id="rvDet">
+        <summary id="rvSum">Approve client and artist reviews, and manage the Reviews page</summary>
+        <h3 style="margin:16px 0 6px;font-size:1rem">Waiting for approval</h3>
+        <p class="hint" style="margin:0">New reviews arrive here and stay private until you approve them. Open this with your reviews password (the one you saved as ADMIN_SECRET in Cloudflare). It is kept only while this page is open.</p>
+        <div class="row" style="margin-top:10px"><input id="rvPass" type="password" autocomplete="off" placeholder="Reviews password" style="max-width:260px"><button class="small" id="rvCheck" type="button">Check for new reviews</button></div>
+        <div id="rvPend" style="margin-top:8px"></div>
+        <h3 style="margin:18px 0 6px;font-size:1rem">On your Reviews page</h3>
+        <div id="rvList"></div>
+        <h3 style="margin:18px 0 6px;font-size:1rem">Add a review yourself</h3>
+        <div class="pr">
+          <div><label for="rvaN">Name</label><input id="rvaN" type="text" maxlength="60" autocomplete="off"></div>
+          <div><label for="rvaR">Rating</label><select id="rvaR" style="width:100%"><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option><option value="0">No rating</option></select></div>
+          <div><label for="rvaU">Website (optional)</label><input id="rvaU" type="text" maxlength="200" autocomplete="off" placeholder="https://"></div>
+        </div>
+        <label for="rvaT" style="margin-top:10px">Review</label>
+        <textarea id="rvaT" maxlength="600" style="width:100%;min-height:90px"></textarea>
+        <div class="row" style="margin-top:10px"><button class="primary small" id="rvaAdd" type="button">Add review</button></div>
+        <div id="rvMsg" class="msg"></div>
+        <p class="hint" style="margin:10px 0 0">Only publish reviews that real clients gave you. Nothing goes live until you press Publish changes.</p>
       </details>
     </section>
 

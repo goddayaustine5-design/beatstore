@@ -335,6 +335,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
     <nav class="main" id="nav" aria-label="Main">
       <ul>
         <li><a href="about.html">About</a></li>
+        <li><a href="reviews.html">Reviews</a></li>
         <li><a href="contact.html">Contact</a></li>
       </ul>
     </nav>
@@ -432,7 +433,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
         </ul>
       </div>
     </div>
-    <div class="legal"><span>&copy; 2026 Austino Pro</span><span id="legalCur">Prices in Nigerian naira</span></div>
+    <div class="legal"><span>&copy; 2026 Austino Pro</span><span id="legalCur">Prices in Nigerian naira</span><a href="#" id="apChoices" hidden style="color:inherit;text-decoration:underline">Cookie choices</a></div>
   </div>
 </footer>
 
@@ -495,6 +496,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   <div class="pl-seek"><span id="plCur">0:00</span><input id="plSeek" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek"><span id="plDur">0:00</span></div>
 </div>
 <script src="config.js"></script>
+<script src="analytics.js"></script>
 <script>
 function startStore(REMOTE,PRICECFG,METACFG,CODECFG){
   var NGN = new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0});
@@ -771,7 +773,7 @@ function startStore(REMOTE,PRICECFG,METACFG,CODECFG){
 
   /* ---------- cart ---------- */
   var cart = new Map();
-  function addCart(key,item){ cart.set(key,item); resetNote(); renderCart(); }
+  function addCart(key,item){ cart.set(key,item); resetNote(); renderCart(); try{ window.apTrack('add_to_cart',{item_name:item.title,licence:item.ln,value:item.price,currency:'NGN'}); }catch(_){} }
   // Keep the cart while the customer visits another page (like About) and comes back in the same tab.
   // Only beat + licence are remembered; titles and prices are rebuilt from the catalogue.
   var CART_KEY = 'austinopro-cart';
@@ -995,7 +997,7 @@ function startStore(REMOTE,PRICECFG,METACFG,CODECFG){
     var ref = txRef(), snap = new Map(cart), list = [];
     snap.forEach(function(i){ list.push(i.title+' ('+i.ln+')'); });
     var shown = money(c.total);
-    flwBusy = true; renderCart(); resetNote();
+    flwBusy = true; renderCart(); resetNote(); try{ window.apTrack('begin_checkout',{method:'flutterwave',value:c.total,currency:'NGN',promo:c.pcode||''}); }catch(_){}
     var done = false, modal;
     try{
       modal = window.FlutterwaveCheckout({
@@ -1046,7 +1048,7 @@ function startStore(REMOTE,PRICECFG,METACFG,CODECFG){
     var ref = orderRef(), url = waUrl(buildMessage(c,email,ref,false));
     if(url.length > MAX_WHATSAPP_URL_LENGTH) url = waUrl(buildMessage(c,email,ref,true));
     if(url.length > MAX_WHATSAPP_URL_LENGTH) return showNote('This order is too long for one WhatsApp message. Please split it into two smaller orders.',true);
-    waBusy = true; renderCart();
+    waBusy = true; renderCart(); try{ window.apTrack('begin_checkout',{method:'whatsapp',value:c.total,currency:'NGN',promo:c.pcode||''}); }catch(_){}
     var a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
     document.body.appendChild(a); a.click(); a.remove();
     showNote('WhatsApp is opening with your order ('+ref+'). Press Send there to submit it. Nothing is paid until we confirm in the chat.',false,url);

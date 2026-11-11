@@ -11,7 +11,7 @@
   function lsDel(k){ try{ localStorage.removeItem(k); }catch(_){} }
   function say(el,text,cls){ el.textContent = text||''; el.className = 'msg'+(cls?' '+cls:''); }
 
-  var S = { cfgText:null, cfg:{wa:'',key:'',on:true,form:'',email:''}, cfgLoaded:null, cfgBase:'', codes:[], codesText:null, codesBase:'', codesLoaded:[], sel:Object.create(null), lastSel:null, vis:[], meta:{}, metaLoaded:{}, metaText:null, metaBase:'', pr:null, prBase:'', prText:null, prOpen:{}, repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
+  var S = { rv:[], rvText:null, rvBase:'', rvLoaded:[], rvDel:[], pend:[], cfgText:null, cfg:{wa:'',key:'',on:true,form:'',email:'',ga:'',rv:'',ts:''}, cfgLoaded:null, cfgBase:'', codes:[], codesText:null, codesBase:'', codesLoaded:[], sel:Object.create(null), lastSel:null, vis:[], meta:{}, metaLoaded:{}, metaText:null, metaBase:'', pr:null, prBase:'', prText:null, prOpen:{}, repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
   // S.list = working order of titles. S.files[title] = File for new/replaced previews. S.removed[title] = true.
 
   function gh(method,path,body,accept){
@@ -308,10 +308,17 @@
       });
     }).then(function(gtext){
       cfgLoad(gtext);
+      return gh('GET',repoPath('/contents/reviews.json?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json').catch(function(e){
+        if(e.status===404) return null; throw e;
+      });
+    }).then(function(rtext){
+      var rd = null;
+      if(rtext){ try{ rd = JSON.parse(rtext); }catch(_){ throw new Error('reviews.json could not be read (it is not valid JSON). Delete it on GitHub or fix it, then reload.'); } }
+      S.rvText = rtext; S.rv = rvFromJSON(rd); S.rvLoaded = JSON.parse(JSON.stringify(S.rv)); S.rvBase = rvJSON(); S.rvDel = []; S.pend = [];
       S.prBase = prJSON(liveSlugs()); S.metaBase = metaJSON(liveSlugs());
       $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
       $('#who').textContent = S.repo+' · '+S.branch;
-      say($('#loginMsg'),''); say($('#prMsg'),''); $('#token').value = ''; renderPrices(); renderCodes(); renderConn(); render(); renderQueue();
+      say($('#loginMsg'),''); say($('#prMsg'),''); $('#token').value = ''; renderPrices(); renderCodes(); renderConn(); renderReviews(); render(); renderQueue();
     });
   }
 
@@ -390,6 +397,7 @@
     if(metaChanged()) parts.push('genre, BPM or key changed');
     if(codesChanged()) parts.push('discount codes changed');
     if(cfgChanged()) parts.push('connections changed');
+    if(rvChanged()) parts.push('reviews changed');
     var replaced = Object.keys(S.files).filter(function(t){ return S.original.indexOf(t)>=0; }).length;
     if(replaced) parts.push(replaced+' preview'+(replaced>1?'s':'')+' replaced');
     $('#bar').classList.toggle('hidden',!parts.length);
@@ -490,6 +498,9 @@
       return gh('GET',repoPath('/contents/config.js?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json').catch(function(e){ if(e.status===404) return null; throw e; });
     }).then(function(gcur){
       if(gcur !== S.cfgText) throw new Error('config.js changed on GitHub since you opened this page. Reload the page and make your changes again so nothing is overwritten.');
+      return gh('GET',repoPath('/contents/reviews.json?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json').catch(function(e){ if(e.status===404) return null; throw e; });
+    }).then(function(rcur){
+      if(rcur !== S.rvText) throw new Error('reviews.json changed on GitHub since you opened this page. Reload the page and make your changes again so nothing is overwritten.');
       return gh('GET',repoPath('/git/commits/'+commitSha));
     }).then(function(c){
       baseTree = c.tree.sha;
@@ -527,6 +538,11 @@
       return gh('POST',repoPath('/git/blobs'),{content:cfgBuild(),encoding:'utf-8'});
     }).then(function(gb){
       if(gb) treeItems.push({path:'config.js',mode:'100644',type:'blob',sha:gb.sha});
+      if(!rvChanged()) return null;
+      st('Saving reviews…');
+      return gh('POST',repoPath('/git/blobs'),{content:rvJSON(),encoding:'utf-8'});
+    }).then(function(rb){
+      if(rb) treeItems.push({path:'reviews.json',mode:'100644',type:'blob',sha:rb.sha});
       removedTitles.forEach(function(t){
         var s = slug(t), names = [s+'.mp3']; if(OLD_SLUGS[t]) names.push(OLD_SLUGS[t]+'.mp3');
         names.forEach(function(n){
@@ -537,13 +553,15 @@
       return gh('POST',repoPath('/git/trees'),{base_tree:baseTree,tree:treeItems});
     }).then(function(tr){
       var added = final.filter(function(t){ return S.original.indexOf(t)<0; }).length;
-      var bits = []; if(added) bits.push(added+' added'); if(removedTitles.length) bits.push(removedTitles.length+' removed'); if(priceChanged()) bits.push('prices updated'); if(metaChanged()) bits.push('genre, BPM and key updated'); if(codesChanged()) bits.push('discount codes updated'); if(cfgChanged()) bits.push('connections updated');
+      var bits = []; if(added) bits.push(added+' added'); if(removedTitles.length) bits.push(removedTitles.length+' removed'); if(priceChanged()) bits.push('prices updated'); if(metaChanged()) bits.push('genre, BPM and key updated'); if(codesChanged()) bits.push('discount codes updated'); if(cfgChanged()) bits.push('connections updated'); if(rvChanged()) bits.push('reviews updated');
       var m = 'Admin: '+(bits.length ? bits.join(', ') : 'update list');
       st('Publishing…');
       return gh('POST',repoPath('/git/commits'),{message:m,tree:tr.sha,parents:[commitSha]});
     }).then(function(c){
       return gh('PATCH',repoPath('/git/refs/heads/'+encodeURIComponent(S.branch)).replace('%2F','/'),{sha:c.sha});
     }).then(function(){
+      var gone = S.rvDel.slice();
+      if(gone.length && S.cfg.rv && $('#rvPass').value) rvApi('/pending/delete','POST',{ids:gone}).catch(function(){});
       btn.disabled = false; $('#discard').disabled = false;
       return load().then(function(){ say($('#addMsg'),'Published. Your site will update in about a minute (refresh the store page after that).','ok'); window.scrollTo({top:0,behavior:'smooth'}); });
     }).catch(function(e){
@@ -552,13 +570,116 @@
     });
   }
 
+  /* ---- reviews ---- */
+  function rvClean(s,max){ return String(s==null?'':s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2066-\u2069]/g,'').replace(/[ \t]+/g,' ').trim().slice(0,max); }
+  function rvUrl(u){
+    u = rvClean(u,200); if(!u) return '';
+    if(!/^https:\/\//i.test(u)){ if(/^[a-z][a-z0-9+.-]*:/i.test(u)) return null; u = 'https://'+u; }
+    try{ var x = new URL(u); if(x.protocol!=='https:' || x.username || x.password || !/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(x.hostname) || x.href.length>200) return null; return x.href; }catch(_){ return null; }
+  }
+  function rvFromJSON(d){
+    var out = [], a = d && typeof d==='object' && Array.isArray(d.reviews) ? d.reviews : [];
+    a.forEach(function(e){
+      if(!e || typeof e!=='object') return;
+      var u = rvUrl(e.u); if(u===null) u = '';
+      var r = Math.round(+e.r); if(!(r>=1 && r<=5)) r = 0;
+      var n = rvClean(e.n,60), t = rvClean(e.t,600); if(!n || !t) return;
+      out.push({id:/^[0-9a-f-]{36}$/.test(String(e.id||'')) ? e.id : crypto.randomUUID(),n:n,t:t,r:r,u:u,d:/^\d{4}-\d{2}-\d{2}$/.test(String(e.d||'')) ? e.d : '',on:e.on!==false});
+    });
+    return out;
+  }
+  function rvJSON(){ return JSON.stringify({reviews:S.rv.map(function(x){ return {id:x.id,n:x.n,t:x.t,r:x.r,u:x.u,d:x.d,on:!!x.on}; })},null,2)+'\n'; }
+  function rvChanged(){ return rvJSON() !== S.rvBase; }
+  function stars(n){ return n ? new Array(n+1).join('\u2605')+new Array(6-n).join('\u2606') : 'no rating'; }
+  function rvApi(path,method,body){
+    var base = S.cfg.rv || S.cfgLoaded.rv, pass = $('#rvPass').value;
+    if(!/^https:\/\//.test(base)) return Promise.reject(new Error('Reviews are not set up yet. Add the reviews inbox address in Connections and publish it first.'));
+    if(!pass) return Promise.reject(new Error('Type your reviews password first.'));
+    return fetch(base+path,{method:method,headers:Object.assign({'Authorization':'Bearer '+pass},body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined,cache:'no-store',credentials:'omit'})
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(d){ if(!r.ok) throw new Error(r.status===401 ? 'That password was not accepted.' : ((d && d.error) || 'The reviews inbox did not answer.')); return d; }); });
+  }
+  function rvCard(r,btns,extra){
+    var row = document.createElement('div'); row.className = 'b'; row.style.cssText = 'grid-template-columns:1fr auto;user-select:text;-webkit-user-select:text';
+    var l = document.createElement('div'), h = document.createElement('div'), b = document.createElement('b'), s = document.createElement('span');
+    b.textContent = r.n; s.className = 'hint'; s.textContent = '  '+stars(r.r)+(r.d ? '  ·  '+r.d : '')+(extra||'');
+    h.appendChild(b); h.appendChild(s); l.appendChild(h);
+    var p = document.createElement('div'); p.textContent = r.t; p.style.cssText = 'margin-top:4px;white-space:pre-line;overflow-wrap:anywhere'; l.appendChild(p);
+    if(r.u){ var u = document.createElement('div'); u.className = 'hint'; u.textContent = r.u; u.style.overflowWrap = 'anywhere'; l.appendChild(u); }
+    var a = document.createElement('span'); a.className = 'row'; btns.forEach(function(x){ a.appendChild(x); });
+    row.appendChild(l); row.appendChild(a); return row;
+  }
+  function mk(label,cls,fn){ var x = document.createElement('button'); x.type = 'button'; x.className = 'small'+(cls?' '+cls:''); x.textContent = label; x.onclick = fn; return x; }
+  function renderPending(){
+    var box = $('#rvPend'); box.textContent = '';
+    if(!S.pend.length){ var e = document.createElement('p'); e.className = 'hint'; e.textContent = 'Nothing waiting. Press "Check for new reviews" to look.'; box.appendChild(e); return; }
+    S.pend.forEach(function(r){
+      box.appendChild(rvCard(r,[
+        mk('Approve','primary',function(){
+          var u = rvUrl(r.u); if(u===null) u = '';
+          S.rv.push({id:r.id,n:rvClean(r.n,60),t:rvClean(r.t,600),r:Math.max(0,Math.min(5,Math.round(+r.r)||0)),u:u,d:/^\d{4}-\d{2}-\d{2}$/.test(String(r.d)) ? r.d : '',on:true});
+          S.rvDel.push(r.id); S.pend = S.pend.filter(function(x){ return x!==r; });
+          say($('#rvMsg'),'Approved. Press Publish changes to put it on the Reviews page.','ok'); renderReviews(); updateBar();
+        }),
+        mk('Reject','danger',function(){
+          if(!confirm('Reject and delete this review?')) return;
+          rvApi('/pending/delete','POST',{ids:[r.id]}).then(function(){ S.pend = S.pend.filter(function(x){ return x!==r; }); say($('#rvMsg'),'Review rejected and deleted.','ok'); renderReviews(); }).catch(function(e){ say($('#rvMsg'),e.message,'err'); });
+        })
+      ]));
+    });
+  }
+  function renderReviews(){
+    renderPending();
+    $('#rvSum').textContent = S.pend.length ? 'Reviews: '+S.pend.length+' waiting for approval' : 'Approve client and artist reviews, and manage the Reviews page';
+    var box = $('#rvList'); box.textContent = '';
+    if(!S.rv.length){ var e = document.createElement('p'); e.className = 'hint'; e.textContent = 'No reviews on your page yet.'; box.appendChild(e); return; }
+    S.rv.forEach(function(r,i){
+      var ed = null;
+      var btns = [
+        mk(r.on ? 'Hide' : 'Show','',function(){ r.on = !r.on; renderReviews(); updateBar(); }),
+        mk('Edit','',function(){ openEdit(r); }),
+        mk('\u2191','',function(){ if(i>0){ S.rv.splice(i-1,0,S.rv.splice(i,1)[0]); renderReviews(); updateBar(); } }),
+        mk('\u2193','',function(){ if(i<S.rv.length-1){ S.rv.splice(i+1,0,S.rv.splice(i,1)[0]); renderReviews(); updateBar(); } }),
+        mk('Delete','danger',function(){ if(!confirm('Delete this review from your page?')) return; S.rv = S.rv.filter(function(x){ return x!==r; }); renderReviews(); updateBar(); })
+      ];
+      btns[2].setAttribute('aria-label','Move up'); btns[3].setAttribute('aria-label','Move down');
+      var row = rvCard(r,btns,r.on ? '' : '  ·  hidden');
+      if(!r.on) row.style.opacity = '.6';
+      box.appendChild(row);
+    });
+  }
+  function openEdit(r){
+    var n = prompt('Name:',r.n); if(n===null) return; n = rvClean(n,60);
+    var t = prompt('Review text:',r.t); if(t===null) return; t = rvClean(t,600);
+    var rt = prompt('Rating from 1 to 5 (0 for none):',String(r.r)); if(rt===null) return; rt = Math.round(+rt);
+    var u = prompt('Website (https://..., empty for none):',r.u); if(u===null) return; var uu = rvUrl(u);
+    if(n.length<2 || t.length<10 || !(rt>=0 && rt<=5) || uu===null){ say($('#rvMsg'),'Not saved: the name, text, rating or website was not valid.','err'); return; }
+    r.n = n; r.t = t; r.r = rt; r.u = uu; say($('#rvMsg'),'Saved. Press Publish changes to put it live.','ok'); renderReviews(); updateBar();
+  }
+  $('#rvCheck').onclick = function(){
+    say($('#rvMsg'),'Checking…');
+    rvApi('/pending','GET').then(function(d){
+      var have = {}; S.rv.forEach(function(x){ have[x.id] = 1; });
+      S.pend = (d.pending||[]).filter(function(x){ return x && /^[0-9a-f-]{36}$/.test(String(x.id)) && !have[x.id]; }).map(function(x){ return {id:x.id,n:rvClean(x.n,60),t:rvClean(x.t,600),r:Math.max(0,Math.min(5,Math.round(+x.r)||0)),u:rvUrl(x.u)||'',d:String(x.d||'')}; });
+      say($('#rvMsg'),S.pend.length ? S.pend.length+' waiting for your approval.' : 'No new reviews.','ok'); renderReviews();
+    }).catch(function(e){ say($('#rvMsg'),e.message,'err'); });
+  };
+  $('#rvaAdd').onclick = function(){
+    var n = rvClean($('#rvaN').value,60), t = rvClean($('#rvaT').value,600), r = Math.round(+$('#rvaR').value), u = rvUrl($('#rvaU').value);
+    if(n.length<2){ say($('#rvMsg'),'Enter the name.','err'); return; }
+    if(t.length<10){ say($('#rvMsg'),'Write at least a sentence.','err'); return; }
+    if(u===null){ say($('#rvMsg'),'The website must be a real https:// address.','err'); return; }
+    S.rv.push({id:crypto.randomUUID(),n:n,t:t,r:(r>=1&&r<=5)?r:0,u:u,d:new Date(Date.now()+3600000).toISOString().slice(0,10),on:true});
+    $('#rvaN').value = ''; $('#rvaT').value = ''; $('#rvaU').value = ''; $('#rvaR').value = '5';
+    say($('#rvMsg'),'Added. Press Publish changes to put it on the Reviews page.','ok'); renderReviews(); updateBar();
+  };
+
   /* ---- connections (config.js) ---- */
   var CFG_TEMPLATE = '/* Austino Pro: site settings. Managed from the admin page. */\nwindow.SITE_CONFIG = {\n};\n';
   function cfgStr(text,k){ var m = new RegExp('(^|\\n)[ \\t]*'+k+'[ \\t]*:[ \\t]*"([^"\\\\\\n]*)"').exec(text||''); return m ? m[2] : ''; }
   function cfgLoad(text){
     S.cfgText = text;
     var on = /(^|\n)[ \t]*flutterwaveEnabled[ \t]*:[ \t]*(true|false)/.exec(text||'');
-    S.cfg = {wa:cfgStr(text,'whatsappNumber'),key:cfgStr(text,'flutterwavePublicKey'),on:on ? on[2]==='true' : true,form:cfgStr(text,'contactFormEndpoint'),email:cfgStr(text,'contactEmail')};
+    S.cfg = {wa:cfgStr(text,'whatsappNumber'),key:cfgStr(text,'flutterwavePublicKey'),on:on ? on[2]==='true' : true,form:cfgStr(text,'contactFormEndpoint'),email:cfgStr(text,'contactEmail'),ga:cfgStr(text,'gaMeasurementId'),rv:cfgStr(text,'reviewsApi'),ts:cfgStr(text,'turnstileSiteKey')};
     S.cfgLoaded = JSON.parse(JSON.stringify(S.cfg)); S.cfgBase = JSON.stringify(S.cfg);
   }
   function cfgChanged(){ return JSON.stringify(S.cfg) !== S.cfgBase; }
@@ -568,6 +689,9 @@
     if(/FLWSECK/i.test(c.key)) return 'That looks like a Flutterwave SECRET key. Never put it on the site. Use the public key (it starts with FLWPUBK).';
     if(c.key && !/^FLWPUBK(_TEST)?-[A-Za-z0-9_-]{10,100}$/.test(c.key)) return 'The Flutterwave key should be your PUBLIC key and start with FLWPUBK.';
     if(c.form && !/^https:\/\/formspree\.io\/f\/[A-Za-z0-9]{4,24}$/.test(c.form)) return 'The contact form address should look like https://formspree.io/f/abcdwxyz.';
+    if(c.rv && !/^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.workers\.dev$/.test(c.rv)) return 'The reviews inbox address should look like https://austino-reviews.yourname.workers.dev (no slash at the end).';
+    if(c.ts && !/^0x[A-Za-z0-9_-]{10,60}$/.test(c.ts)) return 'The spam-check site key should start with 0x. Use the SITE key, never the secret key.';
+    if(c.ga && !/^G-[A-Z0-9]{6,12}$/.test(c.ga)) return 'The Google Analytics ID should look like G-ABC123XYZ9 (it starts with G-).';
     if(c.email && !/^[^\s@"'<>\\]+@[^\s@"'<>\\]+\.[^\s@"'<>\\]+$/.test(c.email)) return 'The contact email does not look right.';
     return '';
   }
@@ -592,10 +716,13 @@
     t = cfgSet(t,'flutterwaveEnabled',c.on ? 'true' : 'false');
     t = cfgSet(t,'contactFormEndpoint',JSON.stringify(c.form));
     t = cfgSet(t,'contactEmail',JSON.stringify(c.email));
+    t = cfgSet(t,'gaMeasurementId',JSON.stringify(c.ga));
+    t = cfgSet(t,'reviewsApi',JSON.stringify(c.rv));
+    t = cfgSet(t,'turnstileSiteKey',JSON.stringify(c.ts));
     return t;
   }
   function renderConn(){
-    $('#cnWa').value = S.cfg.wa; $('#cnKey').value = S.cfg.key; $('#cnOn').checked = !!S.cfg.on; $('#cnForm').value = S.cfg.form; $('#cnEmail').value = S.cfg.email;
+    $('#cnWa').value = S.cfg.wa; $('#cnKey').value = S.cfg.key; $('#cnOn').checked = !!S.cfg.on; $('#cnForm').value = S.cfg.form; $('#cnEmail').value = S.cfg.email; $('#cnGa').value = S.cfg.ga; $('#cnRv').value = S.cfg.rv; $('#cnTs').value = S.cfg.ts;
     cnTest();
   }
   function cnTest(){
@@ -604,10 +731,10 @@
     a.style.opacity = ok ? '1' : '.4'; a.style.pointerEvents = ok ? 'auto' : 'none';
   }
   function cnRead(){
-    S.cfg.wa = $('#cnWa').value.replace(/\s+/g,''); S.cfg.key = $('#cnKey').value.trim(); S.cfg.on = $('#cnOn').checked; S.cfg.form = $('#cnForm').value.trim(); S.cfg.email = $('#cnEmail').value.trim();
+    S.cfg.wa = $('#cnWa').value.replace(/\s+/g,''); S.cfg.key = $('#cnKey').value.trim(); S.cfg.on = $('#cnOn').checked; S.cfg.form = $('#cnForm').value.trim(); S.cfg.email = $('#cnEmail').value.trim(); S.cfg.ga = $('#cnGa').value.trim().toUpperCase(); S.cfg.rv = $('#cnRv').value.trim().replace(/\/+$/,''); S.cfg.ts = $('#cnTs').value.trim();
     var p = cfgProblem(); say($('#cnMsg'),p,'err'); cnTest(); updateBar();
   }
-  ['#cnWa','#cnKey','#cnForm','#cnEmail'].forEach(function(id){ $(id).addEventListener('input',cnRead); });
+  ['#cnWa','#cnKey','#cnForm','#cnEmail','#cnGa','#cnRv','#cnTs'].forEach(function(id){ $(id).addEventListener('input',cnRead); });
   $('#cnOn').addEventListener('change',cnRead);
 
   /* ---- discount codes ---- */
@@ -891,7 +1018,7 @@
     }).catch(function(e){ say($('#loginMsg'),e.message,'err'); });
   };
   $('#signout').onclick = function(){
-    if(Object.keys(S.files).length || changeCount().removed || priceChanged() || metaChanged() || codesChanged() || cfgChanged()){ if(!confirm('You have unpublished changes. Sign out anyway?')) return; }
+    if(Object.keys(S.files).length || changeCount().removed || priceChanged() || metaChanged() || codesChanged() || cfgChanged() || rvChanged()){ if(!confirm('You have unpublished changes. Sign out anyway?')) return; }
     lsDel('ap_admin'); location.reload();
   };
   $('#drop').onclick = function(){ $('#files').click(); };
@@ -903,7 +1030,7 @@
   $('#addBtn').onclick = commitQueue;
   $('#filter').oninput = render;
   $('#publish').onclick = publish;
-  $('#discard').onclick = function(){ S.list = S.original.slice(); S.files = {}; S.removed = {}; S.sel = Object.create(null); S.lastSel = null; S.pr = JSON.parse(JSON.stringify(S.prLoaded)); S.meta = JSON.parse(JSON.stringify(S.metaLoaded)); S.codes = JSON.parse(JSON.stringify(S.codesLoaded)); S.cfg = JSON.parse(JSON.stringify(S.cfgLoaded)); renderConn(); say($('#cnMsg'),''); renderCodes(); say($('#cdMsg'),''); S.prBad = {}; S.prOpen = {}; renderPrices(); render(); say($('#addMsg'),''); say($('#prMsg'),''); };
+  $('#discard').onclick = function(){ S.list = S.original.slice(); S.files = {}; S.removed = {}; S.sel = Object.create(null); S.lastSel = null; S.pr = JSON.parse(JSON.stringify(S.prLoaded)); S.meta = JSON.parse(JSON.stringify(S.metaLoaded)); S.codes = JSON.parse(JSON.stringify(S.codesLoaded)); S.cfg = JSON.parse(JSON.stringify(S.cfgLoaded)); S.rv = JSON.parse(JSON.stringify(S.rvLoaded)); S.rvDel = []; renderReviews(); renderConn(); say($('#cnMsg'),''); renderCodes(); say($('#cdMsg'),''); S.prBad = {}; S.prOpen = {}; renderPrices(); render(); say($('#addMsg'),''); say($('#prMsg'),''); };
   window.addEventListener('beforeunload',function(e){ if(!$('#bar').classList.contains('hidden')){ e.preventDefault(); e.returnValue = ''; } });
 
   try{
