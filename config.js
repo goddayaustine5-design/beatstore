@@ -1,5 +1,8 @@
 /* ===== Austino Pro: site settings. Edit this file only; no other file needs changing. ===== */
 window.SITE_CONFIG = {
+  turnstileSiteKey: "0x4AAAAAAF9J9R7fRsRk6gp9",
+  reviewsApi: "https://austino-reviews-worker.goddayaustine5.workers.dev",
+  gaMeasurementId: "",
   flutterwaveEnabled: true,
   // Your WhatsApp number in international format: country code 234, then the number WITHOUT its leading 0.
   // No plus sign, spaces, dashes or brackets. Example: 0801 234 5678 becomes "2348012345678".
