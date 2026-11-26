@@ -1,0 +1,28 @@
+{
+  "eyebrow": "Beats and instrumentals",
+  "h1a": "Bundle up.",
+  "h1b": "Save big.",
+  "deals": [
+    {
+      "buy": 2,
+      "free": 1,
+      "a": "Buy 2,",
+      "b": "get 1 free.",
+      "t": "Add any three beats to your cart and the third one is on the house."
+    },
+    {
+      "buy": 4,
+      "free": 2,
+      "a": "Buy 4,",
+      "b": "get 2 free.",
+      "t": "Five beats for the price of three, built for EP sessions."
+    },
+    {
+      "buy": 6,
+      "free": 3,
+      "a": "Buy 6,",
+      "b": "get 3 free.",
+      "t": "Seven beats, pay for four."
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 /* ===== Austino Pro: site settings. Edit this file only; no other file needs changing. ===== */
 window.SITE_CONFIG = {
+  reviewsEnabled: false,
   turnstileSiteKey: "0x4AAAAAAF9J9R7fRsRk6gp9",
   reviewsApi: "https://austino-reviews-worker.goddayaustine5.workers.dev",
   gaMeasurementId: "",
