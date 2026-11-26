@@ -352,9 +352,9 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
 <main class="wrap">
   <div class="hero" id="home">
     <div>
-      <p class="eyebrow">Beats and instrumentals</p>
-      <h1>Bundle up.<br><em>Save big.</em></h1>
-      <div class="deals">
+      <p class="eyebrow" id="heroEye">Beats and instrumentals</p>
+      <h1 id="heroH1">Bundle up.<br><em>Save big.</em></h1>
+      <div class="deals" id="heroDeals">
         <div class="deal">
           <p class="deal-h">Buy 2,<br>get 1 free.</p>
           <p>Add any three beats to your cart and the third one is on the house.</p>
@@ -496,9 +496,10 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
   <div class="pl-seek"><span id="plCur">0:00</span><input id="plSeek" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek"><span id="plDur">0:00</span></div>
 </div>
 <script src="config.js"></script>
+<script src="nav.js"></script>
 <script src="analytics.js"></script>
 <script>
-function startStore(REMOTE,PRICECFG,METACFG,CODECFG){
+function startStore(REMOTE,PRICECFG,METACFG,CODECFG,DEALCFG){
   var NGN = new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0});
   // Naira is the base price. Other currencies are converted from naira with a live exchange rate (see "currency" below).
   var CURRENCIES = [{c:'NGN',n:'Naira (₦)',w:'Nigerian naira'},{c:'USD',n:'US Dollar ($)',w:'US dollars'},{c:'GBP',n:'British Pound (£)',w:'British pounds'},{c:'EUR',n:'Euro (€)',w:'euros'}];
@@ -846,14 +847,48 @@ function startStore(REMOTE,PRICECFG,METACFG,CODECFG){
     if(!c) return;
     checkCode(c).then(function(r){ if(typeof r !== 'string'){ promo = r; renderCart(); } else { try{ sessionStorage.removeItem(PROMO_KEY); }catch(_){} } });
   }
-  // Bundle deals: 3 beats = 1 free, 5 beats = 2 free, 7 or more = 3 free. The cheapest beats are the free ones.
+  /* ---------- bundle deals ---------- */
+  // Set in the admin page (deals.json). Each deal: buy N, get M free, so it starts at N+M beats in the cart.
+  // The cheapest beats are the free ones. If deals.json is missing or invalid, the original deals are used.
+  var DEALS = [{buy:2,free:1},{buy:3,free:2},{buy:4,free:3}];
+  (function(){
+    var d = DEALCFG;
+    if(!d || typeof d !== 'object' || !Array.isArray(d.deals) || d.deals.length !== 3) return;
+    function txt(v,max){ return typeof v === 'string' && v.trim() && v.length <= max ? v.trim() : null; }
+    var eye = txt(d.eyebrow,60), h1a = txt(d.h1a,60), h1b = txt(d.h1b,60), out = [];
+    for(var i=0;i<3;i++){
+      var x = d.deals[i];
+      if(!x || typeof x !== 'object') return;
+      var a = txt(x.a,30), b = txt(x.b,30), t = txt(x.t,160);
+      if(!a || !b || !t || !(x.buy%1===0 && x.buy>=1 && x.buy<=20 && x.free%1===0 && x.free>=1 && x.free<=20)) return;
+      if(out.length && x.buy+x.free <= out[out.length-1].buy+out[out.length-1].free) return;
+      out.push({buy:x.buy,free:x.free,a:a,b:b,t:t});
+    }
+    if(!eye || !h1a || !h1b) return;
+    DEALS = out;
+    var e1 = document.getElementById('heroEye'), h1 = document.getElementById('heroH1'), box = document.getElementById('heroDeals');
+    if(e1) e1.textContent = eye;
+    if(h1){ h1.textContent = h1a; h1.appendChild(document.createElement('br')); var em = document.createElement('em'); em.textContent = h1b; h1.appendChild(em); }
+    if(box){
+      box.textContent = '';
+      out.forEach(function(x){
+        var dv = document.createElement('div'); dv.className = 'deal';
+        var p1 = document.createElement('p'); p1.className = 'deal-h'; p1.textContent = x.a; p1.appendChild(document.createElement('br')); p1.appendChild(document.createTextNode(x.b));
+        var p2 = document.createElement('p'); p2.textContent = x.t;
+        dv.appendChild(p1); dv.appendChild(p2); box.appendChild(dv);
+      });
+    }
+  })();
   function calc(){
     var sub = 0, bp = [];
     cart.forEach(function(i,k){ sub += i.price; if(k.indexOf('beat-')===0) bp.push(i.price); });
-    var n = bp.length, free = n>=7 ? 3 : n>=5 ? 2 : n>=3 ? 1 : 0;
+    var n = bp.length, free = 0, next = null;
+    for(var q=0;q<DEALS.length;q++){
+      var need = DEALS[q].buy + DEALS[q].free;
+      if(n >= need) free = DEALS[q].free; else if(!next) next = [need-n,DEALS[q].free];
+    }
     bp.sort(function(a,b){return a-b});
     var disc = 0; for(var j=0;j<free;j++) disc += bp[j];
-    var next = n<3 ? [3-n,1] : n<5 ? [5-n,2] : n<7 ? [7-n,3] : null;
     if(promo && !promoLive(promo)) promo = null;
     var pd = promo && sub-disc>0 ? Math.round((sub-disc)*promo.p/100) : 0;
     return {sub:sub,disc:disc,promo:pd,pcode:pd?promo.code:'',ppct:pd?promo.p:0,total:sub-disc-pd,n:n,free:free,next:next};
@@ -1611,7 +1646,7 @@ function startStore(REMOTE,PRICECFG,METACFG,CODECFG){
 // If beats.json can't be loaded the built-in list below is used; if prices.json is missing the built-in naira prices are used.
 (function(){
   var done = false;
-  function go(list,prices,meta,codes){ if(done) return; done = true; startStore(list,prices,meta,codes); }
+  function go(list,prices,meta,codes,deals){ if(done) return; done = true; startStore(list,prices,meta,codes,deals); }
   function getJSON(url,retry){
     return fetch(url,{cache:'no-cache'}).then(function(r){
       if(r.status === 404) return null;
@@ -1630,10 +1665,10 @@ function startStore(REMOTE,PRICECFG,METACFG,CODECFG){
       });
       return out.length ? out : null;
     });
-    var pPrices = getJSON('prices.json',true), pMeta = getJSON('meta.json',true), pCodes = getJSON('codes.json',true);
-    Promise.all([pBeats,pPrices,pMeta,pCodes]).then(function(a){ go(a[0],a[1],a[2],a[3]); }).catch(function(){ go(null,null,null,null); });
-    setTimeout(function(){ go(null,null,null,null); },6000);
-  }catch(_){ go(null,null,null,null); }
+    var pPrices = getJSON('prices.json',true), pMeta = getJSON('meta.json',true), pCodes = getJSON('codes.json',true), pDeals = getJSON('deals.json',true);
+    Promise.all([pBeats,pPrices,pMeta,pCodes,pDeals]).then(function(a){ go(a[0],a[1],a[2],a[3],a[4]); }).catch(function(){ go(null,null,null,null,null); });
+    setTimeout(function(){ go(null,null,null,null,null); },6000);
+  }catch(_){ go(null,null,null,null,null); }
 })();
 </script>
 

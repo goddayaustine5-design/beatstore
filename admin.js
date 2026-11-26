@@ -11,7 +11,7 @@
   function lsDel(k){ try{ localStorage.removeItem(k); }catch(_){} }
   function say(el,text,cls){ el.textContent = text||''; el.className = 'msg'+(cls?' '+cls:''); }
 
-  var S = { rv:[], rvText:null, rvBase:'', rvLoaded:[], rvDel:[], pend:[], cfgText:null, cfg:{wa:'',key:'',on:true,form:'',email:'',ga:'',rv:'',ts:''}, cfgLoaded:null, cfgBase:'', codes:[], codesText:null, codesBase:'', codesLoaded:[], sel:Object.create(null), lastSel:null, vis:[], meta:{}, metaLoaded:{}, metaText:null, metaBase:'', pr:null, prBase:'', prText:null, prOpen:{}, repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
+  var S = { dl:null, dlText:null, dlBase:'', dlLoaded:null, rv:[], rvText:null, rvBase:'', rvLoaded:[], rvDel:[], pend:[], cfgText:null, cfg:{wa:'',key:'',on:true,form:'',email:'',ga:'',rv:'',ts:'',rvOn:true}, cfgLoaded:null, cfgBase:'', codes:[], codesText:null, codesBase:'', codesLoaded:[], sel:Object.create(null), lastSel:null, vis:[], meta:{}, metaLoaded:{}, metaText:null, metaBase:'', pr:null, prBase:'', prText:null, prOpen:{}, repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
   // S.list = working order of titles. S.files[title] = File for new/replaced previews. S.removed[title] = true.
 
   function gh(method,path,body,accept){
@@ -315,10 +315,17 @@
       var rd = null;
       if(rtext){ try{ rd = JSON.parse(rtext); }catch(_){ throw new Error('reviews.json could not be read (it is not valid JSON). Delete it on GitHub or fix it, then reload.'); } }
       S.rvText = rtext; S.rv = rvFromJSON(rd); S.rvLoaded = JSON.parse(JSON.stringify(S.rv)); S.rvBase = rvJSON(); S.rvDel = []; S.pend = [];
+      return gh('GET',repoPath('/contents/deals.json?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json').catch(function(e){
+        if(e.status===404) return null; throw e;
+      });
+    }).then(function(dtext){
+      var dd = null;
+      if(dtext){ try{ dd = JSON.parse(dtext); }catch(_){ throw new Error('deals.json could not be read (it is not valid JSON). Delete it on GitHub or fix it, then reload.'); } }
+      S.dlText = dtext; S.dl = dlFrom(dd); S.dlLoaded = JSON.parse(JSON.stringify(S.dl)); S.dlBase = dlJSON();
       S.prBase = prJSON(liveSlugs()); S.metaBase = metaJSON(liveSlugs());
       $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
       $('#who').textContent = S.repo+' · '+S.branch;
-      say($('#loginMsg'),''); say($('#prMsg'),''); $('#token').value = ''; renderPrices(); renderCodes(); renderConn(); renderReviews(); render(); renderQueue();
+      say($('#loginMsg'),''); say($('#prMsg'),''); $('#token').value = ''; renderPrices(); renderCodes(); renderConn(); renderReviews(); renderDeals(); render(); renderQueue();
     });
   }
 
@@ -398,6 +405,7 @@
     if(codesChanged()) parts.push('discount codes changed');
     if(cfgChanged()) parts.push('connections changed');
     if(rvChanged()) parts.push('reviews changed');
+    if(dlChanged()) parts.push('bundle deals changed');
     var replaced = Object.keys(S.files).filter(function(t){ return S.original.indexOf(t)>=0; }).length;
     if(replaced) parts.push(replaced+' preview'+(replaced>1?'s':'')+' replaced');
     $('#bar').classList.toggle('hidden',!parts.length);
@@ -472,6 +480,8 @@
     if(!final.length){ alert('The list would be empty. Keep at least one beat.'); btn.disabled = false; $('#discard').disabled = false; return; }
     var pp = prProblem();
     if(pp){ alert(pp); btn.disabled = false; $('#discard').disabled = false; return; }
+    var dp0 = dlProblem();
+    if(dp0){ alert(dp0); btn.disabled = false; $('#discard').disabled = false; return; }
     var cp = cfgProblem();
     if(cp){ alert(cp); btn.disabled = false; $('#discard').disabled = false; return; }
     if(cfgMoneyChanged() && !confirm('You are changing where orders or payments go.\n\n'+cfgMoneySummary()+'\nPublish this change?')){ btn.disabled = false; $('#discard').disabled = false; return; }
@@ -501,6 +511,9 @@
       return gh('GET',repoPath('/contents/reviews.json?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json').catch(function(e){ if(e.status===404) return null; throw e; });
     }).then(function(rcur){
       if(rcur !== S.rvText) throw new Error('reviews.json changed on GitHub since you opened this page. Reload the page and make your changes again so nothing is overwritten.');
+      return gh('GET',repoPath('/contents/deals.json?ref='+encodeURIComponent(S.branch)),null,'application/vnd.github.raw+json').catch(function(e){ if(e.status===404) return null; throw e; });
+    }).then(function(dcur){
+      if(dcur !== S.dlText) throw new Error('deals.json changed on GitHub since you opened this page. Reload the page and make your changes again so nothing is overwritten.');
       return gh('GET',repoPath('/git/commits/'+commitSha));
     }).then(function(c){
       baseTree = c.tree.sha;
@@ -543,6 +556,11 @@
       return gh('POST',repoPath('/git/blobs'),{content:rvJSON(),encoding:'utf-8'});
     }).then(function(rb){
       if(rb) treeItems.push({path:'reviews.json',mode:'100644',type:'blob',sha:rb.sha});
+      if(!dlChanged()) return null;
+      st('Saving bundle deals…');
+      return gh('POST',repoPath('/git/blobs'),{content:dlJSON(),encoding:'utf-8'});
+    }).then(function(db){
+      if(db) treeItems.push({path:'deals.json',mode:'100644',type:'blob',sha:db.sha});
       removedTitles.forEach(function(t){
         var s = slug(t), names = [s+'.mp3']; if(OLD_SLUGS[t]) names.push(OLD_SLUGS[t]+'.mp3');
         names.forEach(function(n){
@@ -553,7 +571,7 @@
       return gh('POST',repoPath('/git/trees'),{base_tree:baseTree,tree:treeItems});
     }).then(function(tr){
       var added = final.filter(function(t){ return S.original.indexOf(t)<0; }).length;
-      var bits = []; if(added) bits.push(added+' added'); if(removedTitles.length) bits.push(removedTitles.length+' removed'); if(priceChanged()) bits.push('prices updated'); if(metaChanged()) bits.push('genre, BPM and key updated'); if(codesChanged()) bits.push('discount codes updated'); if(cfgChanged()) bits.push('connections updated'); if(rvChanged()) bits.push('reviews updated');
+      var bits = []; if(added) bits.push(added+' added'); if(removedTitles.length) bits.push(removedTitles.length+' removed'); if(priceChanged()) bits.push('prices updated'); if(metaChanged()) bits.push('genre, BPM and key updated'); if(codesChanged()) bits.push('discount codes updated'); if(cfgChanged()) bits.push('connections updated'); if(rvChanged()) bits.push('reviews updated'); if(dlChanged()) bits.push('bundle deals updated');
       var m = 'Admin: '+(bits.length ? bits.join(', ') : 'update list');
       st('Publishing…');
       return gh('POST',repoPath('/git/commits'),{message:m,tree:tr.sha,parents:[commitSha]});
@@ -569,6 +587,80 @@
       alert('Could not publish: '+(e && e.message || e)+'\n\nNothing was changed on your site.');
     });
   }
+
+  /* ---- bundle deals (deals.json) ---- */
+  var DL_DEFAULT = {eyebrow:'Beats and instrumentals',h1a:'Bundle up.',h1b:'Save big.',deals:[
+    {buy:2,free:1,a:'Buy 2,',b:'get 1 free.',t:'Add any three beats to your cart and the third one is on the house.'},
+    {buy:3,free:2,a:'Buy 3,',b:'get 2 free.',t:'Five beats for the price of three, built for EP sessions.'},
+    {buy:4,free:3,a:'Buy 4,',b:'get 3 free.',t:'Seven beats, pay for four.'}]};
+  function dlCopy(o){ return JSON.parse(JSON.stringify(o)); }
+  function dlFrom(d){
+    if(!d || typeof d!=='object' || !Array.isArray(d.deals) || d.deals.length!==3) return dlCopy(DL_DEFAULT);
+    var o = {eyebrow:rvClean(d.eyebrow,60),h1a:rvClean(d.h1a,60),h1b:rvClean(d.h1b,60),deals:d.deals.map(function(x){
+      x = x && typeof x==='object' ? x : {};
+      return {buy:Math.round(+x.buy)||0,free:Math.round(+x.free)||0,a:rvClean(x.a,30),b:rvClean(x.b,30),t:rvClean(x.t,160)};
+    })};
+    return dlProblemOf(o) ? dlCopy(DL_DEFAULT) : o;
+  }
+  function dlProblemOf(o){
+    if(!o.eyebrow || !o.h1a || !o.h1b) return 'The heading lines cannot be empty.';
+    var prev = 0;
+    for(var i=0;i<3;i++){
+      var x = o.deals[i], n = i+1;
+      if(!(x.buy>=1 && x.buy<=20) || !(x.free>=1 && x.free<=20)) return 'Deal '+n+': Buy and Free should be whole numbers from 1 to 20.';
+      if(!x.a || !x.b) return 'Deal '+n+': the two headline lines cannot be empty.';
+      if(!x.t) return 'Deal '+n+': the description cannot be empty.';
+      if(x.buy+x.free <= prev) return 'Deal '+n+' must start at more beats (Buy plus Free) than the deal before it.';
+      prev = x.buy+x.free;
+    }
+    return '';
+  }
+  function dlProblem(){ return S.dl ? dlProblemOf(S.dl) : ''; }
+  function dlJSON(){ var o = S.dl || DL_DEFAULT; return JSON.stringify({eyebrow:o.eyebrow,h1a:o.h1a,h1b:o.h1b,deals:o.deals.map(function(x){ return {buy:x.buy,free:x.free,a:x.a,b:x.b,t:x.t}; })},null,2)+'\n'; }
+  function dlChanged(){ return S.dl && dlJSON() !== S.dlBase; }
+  function renderDeals(){
+    var o = S.dl; if(!o) return;
+    $('#dlEye').value = o.eyebrow; $('#dlH1a').value = o.h1a; $('#dlH1b').value = o.h1b;
+    var box = $('#dlRows'); box.textContent = '';
+    o.deals.forEach(function(x,i){
+      var row = document.createElement('div'); row.className = 'selpanel'; row.style.marginTop = '10px';
+      var h = document.createElement('div'); h.style.fontWeight = '700'; h.textContent = 'Deal '+(i+1); row.appendChild(h);
+      var rule = document.createElement('div'); rule.className = 'hint'; rule.id = 'dlRule'+i; row.appendChild(rule);
+      var g = document.createElement('div'); g.className = 'pr'; g.style.marginTop = '8px';
+      function fld(id,label,val,type,max){
+        var w = document.createElement('div'), l = document.createElement('label'), inp = document.createElement('input');
+        l.setAttribute('for',id); l.textContent = label; inp.id = id; inp.type = 'text'; inp.autocomplete = 'off'; if(max) inp.maxLength = max; if(type==='n') inp.inputMode = 'numeric'; inp.value = val;
+        inp.addEventListener('input',dlRead); w.appendChild(l); w.appendChild(inp); return w;
+      }
+      g.appendChild(fld('dlBuy'+i,'Buy (beats you pay for)',x.buy,'n',2)); g.appendChild(fld('dlFree'+i,'Free (extra beats)',x.free,'n',2));
+      g.appendChild(fld('dlA'+i,'Headline, first line',x.a,'',30)); g.appendChild(fld('dlB'+i,'Headline, second line',x.b,'',30));
+      row.appendChild(g);
+      var w2 = document.createElement('div'), l2 = document.createElement('label'), t = document.createElement('input');
+      l2.setAttribute('for','dlT'+i); l2.textContent = 'Description'; l2.style.marginTop = '10px'; t.id = 'dlT'+i; t.type = 'text'; t.maxLength = 160; t.autocomplete = 'off'; t.value = x.t; t.addEventListener('input',dlRead);
+      w2.appendChild(l2); w2.appendChild(t); row.appendChild(w2);
+      var fb = document.createElement('button'); fb.type = 'button'; fb.className = 'small'; fb.style.marginTop = '8px'; fb.textContent = 'Write the headline from the numbers';
+      fb.onclick = function(){ dlRead(); var d = S.dl.deals[i]; d.a = 'Buy '+d.buy+','; d.b = 'get '+d.free+' free.'; renderDeals(); dlNote(); updateBar(); };
+      row.appendChild(fb); box.appendChild(row);
+    });
+    dlRules();
+  }
+  function dlRules(){
+    S.dl.deals.forEach(function(x,i){ var r = $('#dlRule'+i); if(r) r.textContent = 'In the cart: with '+(x.buy+x.free)+' beats the cheapest '+x.free+' '+(x.free>1?'are':'is')+' free.'; });
+  }
+  function dlNote(){ var p = dlProblem(); say($('#dlMsg'),p,'err'); }
+  function dlRead(){
+    var o = S.dl;
+    o.eyebrow = rvClean($('#dlEye').value,60); o.h1a = rvClean($('#dlH1a').value,60); o.h1b = rvClean($('#dlH1b').value,60);
+    o.deals.forEach(function(x,i){
+      x.buy = Math.round(+$('#dlBuy'+i).value.trim()) || 0; x.free = Math.round(+$('#dlFree'+i).value.trim()) || 0;
+      x.a = rvClean($('#dlA'+i).value,30); x.b = rvClean($('#dlB'+i).value,30); x.t = rvClean($('#dlT'+i).value,160);
+    });
+    dlRules(); dlNote(); updateBar();
+  }
+  ['#dlEye','#dlH1a','#dlH1b'].forEach(function(id){ $(id).addEventListener('input',dlRead); });
+  $('#dlReset').onclick = function(){ if(!confirm('Put back the original heading, deal wording and numbers?')) return; S.dl = dlCopy(DL_DEFAULT); renderDeals(); dlNote(); updateBar(); };
+  // reviews page on or off
+  $('#rvOn').addEventListener('change',function(){ S.cfg.rvOn = this.checked; updateBar(); });
 
   /* ---- reviews ---- */
   function rvClean(s,max){ return String(s==null?'':s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2066-\u2069]/g,'').replace(/[ \t]+/g,' ').trim().slice(0,max); }
@@ -679,7 +771,7 @@
   function cfgLoad(text){
     S.cfgText = text;
     var on = /(^|\n)[ \t]*flutterwaveEnabled[ \t]*:[ \t]*(true|false)/.exec(text||'');
-    S.cfg = {wa:cfgStr(text,'whatsappNumber'),key:cfgStr(text,'flutterwavePublicKey'),on:on ? on[2]==='true' : true,form:cfgStr(text,'contactFormEndpoint'),email:cfgStr(text,'contactEmail'),ga:cfgStr(text,'gaMeasurementId'),rv:cfgStr(text,'reviewsApi'),ts:cfgStr(text,'turnstileSiteKey')};
+    S.cfg = {wa:cfgStr(text,'whatsappNumber'),key:cfgStr(text,'flutterwavePublicKey'),on:on ? on[2]==='true' : true,form:cfgStr(text,'contactFormEndpoint'),email:cfgStr(text,'contactEmail'),ga:cfgStr(text,'gaMeasurementId'),rv:cfgStr(text,'reviewsApi'),ts:cfgStr(text,'turnstileSiteKey'),rvOn:!/(^|\n)[ \t]*reviewsEnabled[ \t]*:[ \t]*false/.test(text||'')};
     S.cfgLoaded = JSON.parse(JSON.stringify(S.cfg)); S.cfgBase = JSON.stringify(S.cfg);
   }
   function cfgChanged(){ return JSON.stringify(S.cfg) !== S.cfgBase; }
@@ -719,10 +811,11 @@
     t = cfgSet(t,'gaMeasurementId',JSON.stringify(c.ga));
     t = cfgSet(t,'reviewsApi',JSON.stringify(c.rv));
     t = cfgSet(t,'turnstileSiteKey',JSON.stringify(c.ts));
+    t = cfgSet(t,'reviewsEnabled',c.rvOn ? 'true' : 'false');
     return t;
   }
   function renderConn(){
-    $('#cnWa').value = S.cfg.wa; $('#cnKey').value = S.cfg.key; $('#cnOn').checked = !!S.cfg.on; $('#cnForm').value = S.cfg.form; $('#cnEmail').value = S.cfg.email; $('#cnGa').value = S.cfg.ga; $('#cnRv').value = S.cfg.rv; $('#cnTs').value = S.cfg.ts;
+    $('#cnWa').value = S.cfg.wa; $('#cnKey').value = S.cfg.key; $('#cnOn').checked = !!S.cfg.on; $('#cnForm').value = S.cfg.form; $('#cnEmail').value = S.cfg.email; $('#cnGa').value = S.cfg.ga; $('#cnRv').value = S.cfg.rv; $('#cnTs').value = S.cfg.ts; $('#rvOn').checked = !!S.cfg.rvOn;
     cnTest();
   }
   function cnTest(){
@@ -1018,7 +1111,7 @@
     }).catch(function(e){ say($('#loginMsg'),e.message,'err'); });
   };
   $('#signout').onclick = function(){
-    if(Object.keys(S.files).length || changeCount().removed || priceChanged() || metaChanged() || codesChanged() || cfgChanged() || rvChanged()){ if(!confirm('You have unpublished changes. Sign out anyway?')) return; }
+    if(Object.keys(S.files).length || changeCount().removed || priceChanged() || metaChanged() || codesChanged() || cfgChanged() || rvChanged() || dlChanged()){ if(!confirm('You have unpublished changes. Sign out anyway?')) return; }
     lsDel('ap_admin'); location.reload();
   };
   $('#drop').onclick = function(){ $('#files').click(); };
@@ -1030,7 +1123,7 @@
   $('#addBtn').onclick = commitQueue;
   $('#filter').oninput = render;
   $('#publish').onclick = publish;
-  $('#discard').onclick = function(){ S.list = S.original.slice(); S.files = {}; S.removed = {}; S.sel = Object.create(null); S.lastSel = null; S.pr = JSON.parse(JSON.stringify(S.prLoaded)); S.meta = JSON.parse(JSON.stringify(S.metaLoaded)); S.codes = JSON.parse(JSON.stringify(S.codesLoaded)); S.cfg = JSON.parse(JSON.stringify(S.cfgLoaded)); S.rv = JSON.parse(JSON.stringify(S.rvLoaded)); S.rvDel = []; renderReviews(); renderConn(); say($('#cnMsg'),''); renderCodes(); say($('#cdMsg'),''); S.prBad = {}; S.prOpen = {}; renderPrices(); render(); say($('#addMsg'),''); say($('#prMsg'),''); };
+  $('#discard').onclick = function(){ S.list = S.original.slice(); S.files = {}; S.removed = {}; S.sel = Object.create(null); S.lastSel = null; S.pr = JSON.parse(JSON.stringify(S.prLoaded)); S.meta = JSON.parse(JSON.stringify(S.metaLoaded)); S.codes = JSON.parse(JSON.stringify(S.codesLoaded)); S.cfg = JSON.parse(JSON.stringify(S.cfgLoaded)); S.rv = JSON.parse(JSON.stringify(S.rvLoaded)); S.rvDel = []; S.dl = JSON.parse(JSON.stringify(S.dlLoaded)); renderDeals(); say($('#dlMsg'),''); renderReviews(); renderConn(); say($('#cnMsg'),''); renderCodes(); say($('#cdMsg'),''); S.prBad = {}; S.prOpen = {}; renderPrices(); render(); say($('#addMsg'),''); say($('#prMsg'),''); };
   window.addEventListener('beforeunload',function(e){ if(!$('#bar').classList.contains('hidden')){ e.preventDefault(); e.returnValue = ''; } });
 
   try{

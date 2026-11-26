@@ -347,6 +347,7 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
 </footer>
 
 <script src="config.js"></script>
+<script src="nav.js"></script>
 <script src="analytics.js"></script>
 <script>
 (function(){
@@ -358,6 +359,13 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding-block:48px 40px}
 <script>
 (function(){
   var CFG = window.SITE_CONFIG || {}, API = String(CFG.reviewsApi || '').replace(/\/+$/,''), SITEKEY = String(CFG.turnstileSiteKey || '');
+  if(CFG.reviewsEnabled === false){
+    var mm = document.querySelector('main'); mm.textContent = '';
+    var sec = document.createElement('section'); sec.className = 'rv-head';
+    var hh = document.createElement('h1'); hh.textContent = 'Reviews'; var pp = document.createElement('p'); pp.textContent = 'The reviews page is not open right now. Please check back soon.';
+    var aa = document.createElement('a'); aa.href = '/'; aa.textContent = 'Back to the beats'; aa.style.cssText = 'display:inline-block;margin-top:14px;color:var(--accent);text-decoration:underline';
+    sec.appendChild(hh); sec.appendChild(pp); sec.appendChild(aa); mm.appendChild(sec); return;
+  }
   var list = document.getElementById('rvList'), form = document.getElementById('rvForm'), msg = document.getElementById('rvMsg');
   function say(t,c){ msg.textContent = t; msg.className = 'rv-msg'+(c ? ' '+c : ''); }
   function safeUrl(u){

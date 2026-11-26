@@ -156,6 +156,23 @@ input.bad{border-color:var(--bad)!important}
       </details>
     </section>
 
+    <section class="card" id="dealCard">
+      <h2>Bundle deals and home page heading</h2>
+      <details>
+        <summary>Change the words and the numbers of the bundle deals</summary>
+        <p class="hint" style="margin:10px 0 0">These are the heading and the three deal boxes at the top of your home page. The "Buy" and "Free" numbers also set the real discount in the cart: a deal starts when the cart holds that many beats (Buy plus Free), and the cheapest beats are the free ones. The cart's "Add 2 more beats to get 1 free" hint follows the same numbers.</p>
+        <div class="pr" style="margin-top:12px">
+          <div><label for="dlEye">Small line above the heading</label><input id="dlEye" type="text" maxlength="60" autocomplete="off"></div>
+          <div><label for="dlH1a">Heading, first line</label><input id="dlH1a" type="text" maxlength="60" autocomplete="off"></div>
+          <div><label for="dlH1b">Heading, second line (highlighted)</label><input id="dlH1b" type="text" maxlength="60" autocomplete="off"></div>
+        </div>
+        <div id="dlRows" style="margin-top:6px"></div>
+        <div class="row" style="margin-top:12px"><button class="small" id="dlReset" type="button">Put back the original wording and deals</button></div>
+        <div id="dlMsg" class="msg"></div>
+        <p class="hint" style="margin:10px 0 0">Nothing goes live until you press Publish changes.</p>
+      </details>
+    </section>
+
     <section class="card" id="connCard">
       <h2>Connections</h2>
       <details>
@@ -187,6 +204,8 @@ input.bad{border-color:var(--bad)!important}
 
     <section class="card" id="rvCard">
       <h2>Reviews</h2>
+      <label style="display:flex;gap:8px;align-items:center;margin:4px 0 2px;color:var(--fg);font-size:.95rem;cursor:pointer"><input type="checkbox" id="rvOn" style="width:18px;height:18px;margin:0"> Show the Reviews page on my website</label>
+      <div class="hint" style="margin-bottom:10px">Switch this off to hide the Reviews link from the menu. The page itself will say reviews are not open yet. Your reviews are kept, and you can switch it back on any time. Press Publish changes after you change it.</div>
       <details id="rvDet">
         <summary id="rvSum">Approve client and artist reviews, and manage the Reviews page</summary>
         <h3 style="margin:16px 0 6px;font-size:1rem">Waiting for approval</h3>
