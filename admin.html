@@ -202,6 +202,11 @@ input.bad{border-color:var(--bad)!important}
       </details>
     </section>
 
+    <section class="card" id="bpCard">
+      <h2>Beat pages</h2>
+      <label style="display:flex;gap:8px;align-items:center;margin:4px 0 2px;color:var(--fg);font-size:.95rem;cursor:pointer"><input type="checkbox" id="pubOn" style="width:18px;height:18px;margin:0"> Show &ldquo;Published&rdquo; dates on beat pages</label>
+      <div class="hint">Every beat has its own page (for example /beat/density). Set each beat&rsquo;s date in its Genre &amp; BPM details, or for many beats at once with the Genre, BPM, key, date button. A beat with no date shows nothing. Press Publish changes after you change this.</div>
+    </section>
     <section class="card" id="rvCard">
       <h2>Reviews</h2>
       <label style="display:flex;gap:8px;align-items:center;margin:4px 0 2px;color:var(--fg);font-size:.95rem;cursor:pointer"><input type="checkbox" id="rvOn" style="width:18px;height:18px;margin:0"> Show the Reviews page on my website</label>
@@ -269,7 +274,7 @@ input.bad{border-color:var(--bad)!important}
         <span class="row hidden" id="selActs">
           <button class="small" id="selTop" type="button">Move to top</button>
           <button class="small" id="selBottom" type="button">Move to bottom</button>
-          <button class="small" id="selMetaBtn" type="button">Genre, BPM, key…</button>
+          <button class="small" id="selMetaBtn" type="button">Genre, BPM, key, date…</button>
           <button class="small" id="selPriceBtn" type="button">Prices…</button>
           <button class="small danger" id="selRemove" type="button">Remove</button>
           <button class="small" id="selClear" type="button">Clear selection</button>
@@ -281,6 +286,7 @@ input.bad{border-color:var(--bad)!important}
           <div><label for="bmGenre">Genre</label><input id="bmGenre" type="text" list="genreList" maxlength="24" autocomplete="off" placeholder="e.g. Afrobeats"></div>
           <div><label for="bmBpm">BPM</label><input id="bmBpm" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 100"></div>
           <div><label for="bmKey">Key</label><select id="bmKey" style="width:100%"></select></div>
+          <div><label for="bmDate">Published date</label><input id="bmDate" type="date"></div>
         </div>
         <div class="row" style="margin-top:10px"><button class="primary small" id="bmApply" type="button">Apply</button><button class="small" id="bmCancel" type="button">Cancel</button></div>
       </div>

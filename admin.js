@@ -11,7 +11,7 @@
   function lsDel(k){ try{ localStorage.removeItem(k); }catch(_){} }
   function say(el,text,cls){ el.textContent = text||''; el.className = 'msg'+(cls?' '+cls:''); }
 
-  var S = { dl:null, dlText:null, dlBase:'', dlLoaded:null, rv:[], rvText:null, rvBase:'', rvLoaded:[], rvDel:[], pend:[], cfgText:null, cfg:{wa:'',key:'',on:true,form:'',email:'',ga:'',rv:'',ts:'',rvOn:true}, cfgLoaded:null, cfgBase:'', codes:[], codesText:null, codesBase:'', codesLoaded:[], sel:Object.create(null), lastSel:null, vis:[], meta:{}, metaLoaded:{}, metaText:null, metaBase:'', pr:null, prBase:'', prText:null, prOpen:{}, repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
+  var S = { dl:null, dlText:null, dlBase:'', dlLoaded:null, rv:[], rvText:null, rvBase:'', rvLoaded:[], rvDel:[], pend:[], cfgText:null, cfg:{wa:'',key:'',on:true,form:'',email:'',ga:'',rv:'',ts:'',rvOn:true,pubOn:true}, cfgLoaded:null, cfgBase:'', codes:[], codesText:null, codesBase:'', codesLoaded:[], sel:Object.create(null), lastSel:null, vis:[], meta:{}, metaLoaded:{}, metaText:null, metaBase:'', pr:null, prBase:'', prText:null, prOpen:{}, repo:'', branch:'main', token:'', original:[], originalText:'', list:[], audio:{}, audioLower:{}, queue:[], removed:{}, files:{}, delAudio:{}, order:null };
   // S.list = working order of titles. S.files[title] = File for new/replaced previews. S.removed[title] = true.
 
   function gh(method,path,body,accept){
@@ -168,13 +168,14 @@
     n.forEach(function(x){ out.push(x+' major'); }); n.forEach(function(x){ out.push(x+' minor'); });
     return out;
   })();
+  function okDate(d){ return typeof d==='string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && !isNaN(Date.parse(d)) && new Date(d+'T00:00:00Z').toISOString().slice(0,10)===d; }
   function cleanGenre(g){ return String(g||'').replace(/[<>"'`\\]/g,'').replace(/\s+/g,' ').trim().slice(0,24); }
   function metaFromJSON(d){
     var o = {}; if(!d || typeof d!=='object' || Array.isArray(d)) return o;
     Object.keys(d).forEach(function(k){
       var m = d[k], r = {}; if(!m || typeof m!=='object') return;
       var g = cleanGenre(m.g), b = Math.round(+m.bpm);
-      if(g) r.g = g; if(b>=40 && b<=300) r.bpm = b; if(KEYS.indexOf(m.k)>=0) r.k = m.k;
+      if(g) r.g = g; if(b>=40 && b<=300) r.bpm = b; if(KEYS.indexOf(m.k)>=0) r.k = m.k; if(okDate(m.d)) r.d = m.d;
       if(Object.keys(r).length) o[k] = r;
     });
     return o;
@@ -183,7 +184,7 @@
     var out = {};
     Object.keys(S.meta).sort().forEach(function(k){
       if(live && live.indexOf(k)<0) return;
-      var m = S.meta[k], r = {}; if(m.g) r.g = m.g; if(m.bpm) r.bpm = m.bpm; if(m.k) r.k = m.k;
+      var m = S.meta[k], r = {}; if(m.g) r.g = m.g; if(m.bpm) r.bpm = m.bpm; if(m.k) r.k = m.k; if(m.d) r.d = m.d;
       if(Object.keys(r).length) out[k] = r;
     });
     return JSON.stringify(out,null,2)+'\n';
@@ -212,11 +213,14 @@
       else if(n>=40 && n<=300){ m.bpm = n; bi.classList.remove('bad'); delete S.prBad[s+'|bpm']; }
       else { bi.classList.add('bad'); S.prBad[s+'|bpm'] = 1; }
       if(KEYS.indexOf(ks.value)>=0) m.k = ks.value; else delete m.k;
+      if(okDate(di.value)) m.d = di.value; else delete m.d;
       if(!Object.keys(m).length) delete S.meta[s];
       var hl = ed.parentNode && ed.parentNode.querySelector('.mline'); if(hl) hl.textContent = metaLine(t);
       var dl = $('#genreList'); if(dl){ dl.textContent = ''; genreList().forEach(function(x){ var o = document.createElement('option'); o.value = x; dl.appendChild(o); }); }
       updateBar();
     }
+    var dw = document.createElement('div'), dlb = document.createElement('label'), di = document.createElement('input');
+    dlb.textContent = 'Published date'; di.type = 'date'; di.setAttribute('aria-label',t+' published date'); di.value = (S.meta[s] && S.meta[s].d) || '';
     var kw = document.createElement('div'), kl = document.createElement('label'), ks = document.createElement('select');
     kl.textContent = 'Key'; ks.setAttribute('aria-label',t+' key'); ks.style.width = '100%';
     var none = document.createElement('option'); none.value = ''; none.textContent = 'Not set'; ks.appendChild(none);
@@ -226,8 +230,8 @@
       ks.appendChild(og);
     });
     ks.value = (S.meta[s] && S.meta[s].k) || '';
-    gi.oninput = saveMeta; bi.oninput = saveMeta; ks.onchange = saveMeta;
-    gw.appendChild(gl); gw.appendChild(gi); bw.appendChild(bl); bw.appendChild(bi); kw.appendChild(kl); kw.appendChild(ks); det.appendChild(gw); det.appendChild(bw); det.appendChild(kw);
+    gi.oninput = saveMeta; bi.oninput = saveMeta; ks.onchange = saveMeta; di.onchange = saveMeta; di.oninput = saveMeta;
+    gw.appendChild(gl); gw.appendChild(gi); bw.appendChild(bl); bw.appendChild(bi); kw.appendChild(kl); kw.appendChild(ks); dw.appendChild(dlb); dw.appendChild(di); det.appendChild(gw); det.appendChild(bw); det.appendChild(kw); det.appendChild(dw);
     var grid = document.createElement('div'); grid.className = 'pr'; grid.style.marginTop = '12px';
     TIERS.forEach(function(name,k){
       var w = document.createElement('div'), l = document.createElement('label'), i = document.createElement('input');
@@ -661,6 +665,7 @@
   $('#dlReset').onclick = function(){ if(!confirm('Put back the original heading, deal wording and numbers?')) return; S.dl = dlCopy(DL_DEFAULT); renderDeals(); dlNote(); updateBar(); };
   // reviews page on or off
   $('#rvOn').addEventListener('change',function(){ S.cfg.rvOn = this.checked; updateBar(); });
+  $('#pubOn').addEventListener('change',function(){ S.cfg.pubOn = this.checked; updateBar(); });
 
   /* ---- reviews ---- */
   function rvClean(s,max){ return String(s==null?'':s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2066-\u2069]/g,'').replace(/[ \t]+/g,' ').trim().slice(0,max); }
@@ -771,7 +776,7 @@
   function cfgLoad(text){
     S.cfgText = text;
     var on = /(^|\n)[ \t]*flutterwaveEnabled[ \t]*:[ \t]*(true|false)/.exec(text||'');
-    S.cfg = {wa:cfgStr(text,'whatsappNumber'),key:cfgStr(text,'flutterwavePublicKey'),on:on ? on[2]==='true' : true,form:cfgStr(text,'contactFormEndpoint'),email:cfgStr(text,'contactEmail'),ga:cfgStr(text,'gaMeasurementId'),rv:cfgStr(text,'reviewsApi'),ts:cfgStr(text,'turnstileSiteKey'),rvOn:!/(^|\n)[ \t]*reviewsEnabled[ \t]*:[ \t]*false/.test(text||'')};
+    S.cfg = {wa:cfgStr(text,'whatsappNumber'),key:cfgStr(text,'flutterwavePublicKey'),on:on ? on[2]==='true' : true,form:cfgStr(text,'contactFormEndpoint'),email:cfgStr(text,'contactEmail'),ga:cfgStr(text,'gaMeasurementId'),rv:cfgStr(text,'reviewsApi'),ts:cfgStr(text,'turnstileSiteKey'),rvOn:!/(^|\n)[ \t]*reviewsEnabled[ \t]*:[ \t]*false/.test(text||''),pubOn:!/(^|\n)[ \t]*showPublished[ \t]*:[ \t]*false/.test(text||'')};
     S.cfgLoaded = JSON.parse(JSON.stringify(S.cfg)); S.cfgBase = JSON.stringify(S.cfg);
   }
   function cfgChanged(){ return JSON.stringify(S.cfg) !== S.cfgBase; }
@@ -812,10 +817,11 @@
     t = cfgSet(t,'reviewsApi',JSON.stringify(c.rv));
     t = cfgSet(t,'turnstileSiteKey',JSON.stringify(c.ts));
     t = cfgSet(t,'reviewsEnabled',c.rvOn ? 'true' : 'false');
+    t = cfgSet(t,'showPublished',c.pubOn ? 'true' : 'false');
     return t;
   }
   function renderConn(){
-    $('#cnWa').value = S.cfg.wa; $('#cnKey').value = S.cfg.key; $('#cnOn').checked = !!S.cfg.on; $('#cnForm').value = S.cfg.form; $('#cnEmail').value = S.cfg.email; $('#cnGa').value = S.cfg.ga; $('#cnRv').value = S.cfg.rv; $('#cnTs').value = S.cfg.ts; $('#rvOn').checked = !!S.cfg.rvOn;
+    $('#cnWa').value = S.cfg.wa; $('#cnKey').value = S.cfg.key; $('#cnOn').checked = !!S.cfg.on; $('#cnForm').value = S.cfg.form; $('#cnEmail').value = S.cfg.email; $('#cnGa').value = S.cfg.ga; $('#cnRv').value = S.cfg.rv; $('#cnTs').value = S.cfg.ts; $('#rvOn').checked = !!S.cfg.rvOn; $('#pubOn').checked = !!S.cfg.pubOn;
     cnTest();
   }
   function cnTest(){
@@ -945,15 +951,16 @@
   $('#selMetaBtn').onclick = function(){ $('#selPriceP').classList.add('hidden'); $('#selMetaP').classList.toggle('hidden'); say($('#selMsg'),''); };
   $('#bmCancel').onclick = function(){ $('#selMetaP').classList.add('hidden'); };
   $('#bmApply').onclick = function(){
-    var g = selTitles(), genre = cleanGenre($('#bmGenre').value), raw = $('#bmBpm').value.trim(), key = $('#bmKey').value, bpm = NaN;
+    var g = selTitles(), genre = cleanGenre($('#bmGenre').value), raw = $('#bmBpm').value.trim(), key = $('#bmKey').value, dte = $('#bmDate').value, bpm = NaN;
     if(raw){ bpm = /^\d{2,3}$/.test(raw) ? +raw : NaN; if(!(bpm>=40 && bpm<=300)){ say($('#selMsg'),'BPM should be a whole number from 40 to 300.','err'); return; } }
     if(key && KEYS.indexOf(key)<0){ say($('#selMsg'),'That key is not on the list.','err'); return; }
-    if(!genre && !raw && !key){ say($('#selMsg'),'Fill in a genre, a BPM or a key first.','err'); return; }
+    if(dte && !okDate(dte)){ say($('#selMsg'),'That published date is not a real date.','err'); return; }
+    if(!genre && !raw && !key && !dte){ say($('#selMsg'),'Fill in a genre, a BPM, a key or a published date first.','err'); return; }
     g.forEach(function(t){
       var s = slug(t), m = S.meta[s] || (S.meta[s] = {});
-      if(genre) m.g = genre; if(raw) m.bpm = bpm; if(key) m.k = key;
+      if(genre) m.g = genre; if(raw) m.bpm = bpm; if(key) m.k = key; if(dte) m.d = dte;
     });
-    $('#bmGenre').value = ''; $('#bmBpm').value = ''; $('#bmKey').value = ''; $('#selMetaP').classList.add('hidden');
+    $('#bmDate').value = ''; $('#bmGenre').value = ''; $('#bmBpm').value = ''; $('#bmKey').value = ''; $('#selMetaP').classList.add('hidden');
     say($('#selMsg'),'Updated '+g.length+' beat'+(g.length>1?'s':'')+'. Nothing is live until you press Publish changes.','ok');
     render();
   };
